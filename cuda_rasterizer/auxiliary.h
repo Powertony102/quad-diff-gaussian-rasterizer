@@ -161,6 +161,13 @@ struct ExtremePoints {
     float2 y_coords_at_x_extremes;  // (y1, y2) at (x_min, x_max)
 };
 
+// Structure to hold dual asymmetric AABBs
+struct DualBox {
+    float4 left_box;   // (min_x, min_y, max_x, max_y)
+    float4 right_box;  // (min_x, min_y, max_x, max_y)
+    bool valid;        // Whether boxes are valid
+};
+
 // Compute tilt angle θ using covariance matrix eigenvalue approach
 // θ = 0.5 * atan2(2σ_xy, σ_xx - σ_yy)
 // Requirements: 2.1
@@ -226,6 +233,213 @@ __device__ inline ExtremePoints computeExtremePoints(
     }
     
     return extremes;
+}
+
+// Construct dual asymmetric AABBs using extreme points and center
+// Implements left-right partitioning based on Gaussian center x-coordinate
+// Requirements: 1.2, 1.3, 2.3, 2.4, 2.5
+__device__ inline DualBox constructDualBoxes(
+    const ExtremePoints& extremes,
+    const float2& center,
+    float stretch_factor
+) {
+    DualBox dual_box;
+    dual_box.valid = false;
+    
+    // Collect all extreme points for partitioning
+    float extreme_points_x[4] = {
+        extremes.x_extremes.x,  // x_min
+        extremes.x_extremes.y,  // x_max
+        extremes.x_coords_at_y_extremes.x,  // x at y_min
+        extremes.x_coords_at_y_extremes.y   // x at y_max
+    };
+    
+    float extreme_points_y[4] = {
+        extremes.y_coords_at_x_extremes.x,  // y at x_min
+        extremes.y_coords_at_x_extremes.y,  // y at x_max
+        extremes.y_extremes.x,  // y_min
+        extremes.y_extremes.y   // y_max
+    };
+    
+    // Partition extreme points based on x-coordinate relative to center
+    // Requirements: 1.2 - left-right partitioning based on Gaussian center x-coordinate
+    float left_points_x[5], left_points_y[5];  // +1 for center
+    float right_points_x[5], right_points_y[5]; // +1 for center
+    int left_count = 0, right_count = 0;
+    
+    // Add center point to both partitions
+    left_points_x[left_count] = center.x;
+    left_points_y[left_count] = center.y;
+    left_count++;
+    
+    right_points_x[right_count] = center.x;
+    right_points_y[right_count] = center.y;
+    right_count++;
+    
+    // Partition extreme points
+    for (int i = 0; i < 4; i++) {
+        if (extreme_points_x[i] <= center.x) {
+            // Left partition
+            left_points_x[left_count] = extreme_points_x[i];
+            left_points_y[left_count] = extreme_points_y[i];
+            left_count++;
+        }
+        if (extreme_points_x[i] >= center.x) {
+            // Right partition (points on center line go to both)
+            right_points_x[right_count] = extreme_points_x[i];
+            right_points_y[right_count] = extreme_points_y[i];
+            right_count++;
+        }
+    }
+    
+    // Construct left AABB from left partition points
+    // Requirements: 1.3 - asymmetric AABB construction using extreme points and center
+    float left_min_x = left_points_x[0], left_max_x = left_points_x[0];
+    float left_min_y = left_points_y[0], left_max_y = left_points_y[0];
+    
+    for (int i = 1; i < left_count; i++) {
+        left_min_x = fminf(left_min_x, left_points_x[i]);
+        left_max_x = fmaxf(left_max_x, left_points_x[i]);
+        left_min_y = fminf(left_min_y, left_points_y[i]);
+        left_max_y = fmaxf(left_max_y, left_points_y[i]);
+    }
+    
+    // Construct right AABB from right partition points
+    float right_min_x = right_points_x[0], right_max_x = right_points_x[0];
+    float right_min_y = right_points_y[0], right_max_y = right_points_y[0];
+    
+    for (int i = 1; i < right_count; i++) {
+        right_min_x = fminf(right_min_x, right_points_x[i]);
+        right_max_x = fmaxf(right_max_x, right_points_x[i]);
+        right_min_y = fminf(right_min_y, right_points_y[i]);
+        right_max_y = fmaxf(right_max_y, right_points_y[i]);
+    }
+    
+    // Apply adaptive stretching to box dimensions
+    // Requirements: 2.5 - extend each half-box along its longer dimension away from center
+    float left_width = left_max_x - left_min_x;
+    float left_height = left_max_y - left_min_y;
+    float right_width = right_max_x - right_min_x;
+    float right_height = right_max_y - right_min_y;
+    
+    // Apply stretching to left box along its longer dimension, away from center
+    if (left_width >= left_height) {
+        // Stretch horizontally away from center (leftward for left box)
+        float stretch_amount = left_width * (stretch_factor - 1.0f);
+        left_min_x -= stretch_amount;  // Extend leftward away from center
+    } else {
+        // Stretch vertically away from center
+        float stretch_amount = left_height * (stretch_factor - 1.0f) * 0.5f;
+        left_min_y -= stretch_amount;
+        left_max_y += stretch_amount;
+    }
+    
+    // Apply stretching to right box along its longer dimension, away from center
+    if (right_width >= right_height) {
+        // Stretch horizontally away from center (rightward for right box)
+        float stretch_amount = right_width * (stretch_factor - 1.0f);
+        right_max_x += stretch_amount;  // Extend rightward away from center
+    } else {
+        // Stretch vertically away from center
+        float stretch_amount = right_height * (stretch_factor - 1.0f) * 0.5f;
+        right_min_y -= stretch_amount;
+        right_max_y += stretch_amount;
+    }
+    
+    // Store the constructed dual boxes
+    dual_box.left_box = make_float4(left_min_x, left_min_y, left_max_x, left_max_y);
+    dual_box.right_box = make_float4(right_min_x, right_min_y, right_max_x, right_max_y);
+    dual_box.valid = true;
+    
+    return dual_box;
+}
+
+// ---- Unique Tile Intersection Generation System ---- //
+
+// Efficient AABB-tile intersection test
+// Requirements: 1.4, 5.1, 5.2, 5.3, 5.4
+__device__ inline bool tileIntersectsBox(
+    int tile_x, int tile_y,
+    const float4& box  // (min_x, min_y, max_x, max_y)
+) {
+    // Convert tile coordinates to pixel boundaries
+    float tile_min_x = tile_x * BLOCK_X;
+    float tile_max_x = (tile_x + 1) * BLOCK_X;
+    float tile_min_y = tile_y * BLOCK_Y;
+    float tile_max_y = (tile_y + 1) * BLOCK_Y;
+    
+    // AABB intersection test: boxes intersect if they overlap in both dimensions
+    bool x_overlap = (tile_min_x < box.z) && (tile_max_x > box.x);
+    bool y_overlap = (tile_min_y < box.w) && (tile_max_y > box.y);
+    
+    return x_overlap && y_overlap;
+}
+
+// Generate unique tile intersections using union-based approach
+// Prevents duplicate key-value pairs by processing each tile exactly once
+// Requirements: 1.4, 5.1, 5.2, 5.3, 5.4
+__device__ inline uint32_t generateUniqueTileIntersections(
+    const DualBox& dual_box,
+    const dim3& grid,
+    uint32_t idx,
+    uint32_t off,
+    float depth,
+    uint64_t* gaussian_keys_unsorted,
+    uint32_t* gaussian_values_unsorted
+) {
+    if (!dual_box.valid) {
+        return 0;
+    }
+    
+    // Compute union bounding rectangle of both boxes
+    float union_min_x = fminf(dual_box.left_box.x, dual_box.right_box.x);
+    float union_min_y = fminf(dual_box.left_box.y, dual_box.right_box.y);
+    float union_max_x = fmaxf(dual_box.left_box.z, dual_box.right_box.z);
+    float union_max_y = fmaxf(dual_box.left_box.w, dual_box.right_box.w);
+    
+    // Convert to tile coordinates with proper clamping
+    int rect_min_x = max(0, min((int)grid.x, (int)(union_min_x / BLOCK_X)));
+    int rect_min_y = max(0, min((int)grid.y, (int)(union_min_y / BLOCK_Y)));
+    int rect_max_x = max(0, min((int)grid.x, (int)(union_max_x / BLOCK_X + 1)));
+    int rect_max_y = max(0, min((int)grid.y, (int)(union_max_y / BLOCK_Y + 1)));
+    
+    // If no tiles are touched, return 0
+    if (rect_min_x >= rect_max_x || rect_min_y >= rect_max_y) {
+        return 0;
+    }
+    
+    uint32_t tiles_count = 0;
+    
+    // Single-pass key generation with proper indexing
+    // Process each tile in the union rectangle exactly once
+    // Requirements: 5.1, 5.2, 5.3 - prevent duplicate key-value pairs
+    for (int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
+        for (int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
+            // Test intersection with either left box OR right box (union logic)
+            // Requirements: 1.4, 5.2 - logical OR operation for tile overlap
+            bool intersects_left = tileIntersectsBox(tile_x, tile_y, dual_box.left_box);
+            bool intersects_right = tileIntersectsBox(tile_x, tile_y, dual_box.right_box);
+            
+            if (intersects_left || intersects_right) {
+                tiles_count++;
+                
+                // Generate single key-value pair for this tile
+                // Requirements: 5.3, 5.4 - unique (tile_index, gaussian_index) pairs
+                if (gaussian_keys_unsorted != nullptr) {
+                    // Key format: | tile ID | depth |
+                    uint64_t key = tile_y * grid.x + tile_x;
+                    key <<= 32;
+                    key |= *((uint32_t*)&depth);
+                    
+                    gaussian_keys_unsorted[off] = key;
+                    gaussian_values_unsorted[off] = idx;
+                    off++;
+                }
+            }
+        }
+    }
+    
+    return tiles_count;
 }
 
 __device__ inline float2 computeEllipseIntersection(

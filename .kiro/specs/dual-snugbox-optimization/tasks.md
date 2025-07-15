@@ -6,13 +6,13 @@
   - Add stretching factor computation with configurable beta parameter
   - _Requirements: 1.1, 2.1, 2.2, 4.1_
 
-- [ ] 2. Develop dual-box construction logic
+- [x] 2. Develop dual-box construction logic
   - Implement left-right partitioning based on Gaussian center x-coordinate
   - Create asymmetric AABB construction using extreme points and center
   - Add adaptive stretching application to box dimensions
   - _Requirements: 1.2, 1.3, 2.3, 2.4, 2.5_
 
-- [ ] 3. Create unique tile intersection generation system
+- [x] 3. Create unique tile intersection generation system
   - Implement union-based tile processing to prevent duplicate key-value pairs
   - Add efficient AABB-tile intersection testing for dual boxes
   - Ensure single-pass key generation with proper indexing
