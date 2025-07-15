@@ -151,6 +151,83 @@ __forceinline__ __device__ bool in_frustum(int idx,
 	return true;
 }
 
+// ---- Dual-SnugBox Core Mathematical Functions ---- //
+
+// Structure to hold extreme points of an ellipse
+struct ExtremePoints {
+    float2 x_extremes;  // (x_min, x_max)
+    float2 y_extremes;  // (y_min, y_max)
+    float2 x_coords_at_y_extremes;  // (x1, x2) at (y_min, y_max)
+    float2 y_coords_at_x_extremes;  // (y1, y2) at (x_min, x_max)
+};
+
+// Compute tilt angle θ using covariance matrix eigenvalue approach
+// θ = 0.5 * atan2(2σ_xy, σ_xx - σ_yy)
+// Requirements: 2.1
+__device__ inline float computeTiltAngle(const float3& cov2d) {
+    return 0.5f * atan2f(2.0f * cov2d.y, cov2d.x - cov2d.z);
+}
+
+// Compute stretching factor s(θ) = 1 + β|cos(2θ)| where β ∈ [1.0, 1.2]
+// When θ ≈ 0° or 90°: s ≈ 2.0 (maximum stretching)
+// When θ ≈ 45°: s = 1.0 (minimal stretching)
+// Requirements: 2.2, 2.3, 2.4
+__device__ inline float computeStretchingFactor(float theta, float beta = 1.1f) {
+    // s(θ) = 1 + β|cos(2θ)|
+    return 1.0f + beta * fabsf(cosf(2.0f * theta));
+}
+
+// Compute extreme points of ellipse using analytical methods
+// Based on the ellipse equation: Ax² + 2Bxy + Cy² = constant
+// Requirements: 1.1, 4.1
+__device__ inline ExtremePoints computeExtremePoints(
+    const float4& con_o,  // (A, B, C, opacity) conic coefficients
+    float disc,           // discriminant B² - AC (should be negative for valid ellipse)
+    float t,              // threshold constant
+    const float2& p       // ellipse center
+) {
+    ExtremePoints extremes;
+    
+    // For ellipse Ax² + 2Bxy + Cy² = t, compute extreme points analytically
+    float A = con_o.x;
+    float B = con_o.y;
+    float C = con_o.z;
+    
+    // X-extremes: solve d/dx = 0 → 2Ax + 2By = 0 → y = -Ax/B
+    // Substitute back: Ax² + 2B(-Ax/B)x + C(-Ax/B)² = t
+    // Simplifies to: x² = -t*C/disc
+    float x_extreme_offset = sqrtf(-t * C / disc);
+    extremes.x_extremes = make_float2(p.x - x_extreme_offset, p.x + x_extreme_offset);
+    
+    // Y-coordinates at x-extremes
+    if (fabsf(B) > 1e-6f) {
+        float y_at_x_min = p.y - A * (-x_extreme_offset) / B;
+        float y_at_x_max = p.y - A * x_extreme_offset / B;
+        extremes.y_coords_at_x_extremes = make_float2(y_at_x_min, y_at_x_max);
+    } else {
+        // When B ≈ 0, ellipse axes are aligned with coordinate axes
+        extremes.y_coords_at_x_extremes = make_float2(p.y, p.y);
+    }
+    
+    // Y-extremes: solve d/dy = 0 → 2Bx + 2Cy = 0 → x = -Cy/B
+    // Substitute back: A(-Cy/B)² + 2B(-Cy/B)y + Cy² = t
+    // Simplifies to: y² = -t*A/disc
+    float y_extreme_offset = sqrtf(-t * A / disc);
+    extremes.y_extremes = make_float2(p.y - y_extreme_offset, p.y + y_extreme_offset);
+    
+    // X-coordinates at y-extremes
+    if (fabsf(B) > 1e-6f) {
+        float x_at_y_min = p.x - C * (-y_extreme_offset) / B;
+        float x_at_y_max = p.x - C * y_extreme_offset / B;
+        extremes.x_coords_at_y_extremes = make_float2(x_at_y_min, x_at_y_max);
+    } else {
+        // When B ≈ 0, ellipse axes are aligned with coordinate axes
+        extremes.x_coords_at_y_extremes = make_float2(p.x, p.x);
+    }
+    
+    return extremes;
+}
+
 __device__ inline float2 computeEllipseIntersection(
     const float4 con_o, const float disc, const float t, const float2 p,
     const bool isY, const float coord)
