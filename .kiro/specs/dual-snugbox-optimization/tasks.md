@@ -18,13 +18,13 @@
   - Ensure single-pass key generation with proper indexing
   - _Requirements: 1.4, 5.1, 5.2, 5.3, 5.4_
 
-- [ ] 4. Integrate dual-SnugBox into existing CUDA rasterizer
+- [x] 4. Integrate dual-SnugBox into existing CUDA rasterizer
   - Modify duplicateToTilesTouched function in auxiliary.h to use dual-box algorithm
   - Preserve existing function interface and data structures
   - Maintain compatibility with current preprocessing pipeline
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 5. Add robust error handling and edge case management
+- [-] 5. Add robust error handling and edge case management
   - Implement degenerate ellipse detection and graceful fallback
   - Add numerical stability safeguards for extreme aspect ratios
   - Include boundary clamping for screen-space coordinates
