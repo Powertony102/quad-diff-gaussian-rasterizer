@@ -49,11 +49,13 @@ class _RasterizeGaussians(torch.autograd.Function):
         ctx,
         means3D,
         means2D,
-        colors,
+        sh,
+        colors_precomp,
         opacities,
         scales,
         rotations,
         cov3Ds_precomp,
+        scores,
         raster_settings
     ):
 
@@ -77,7 +79,7 @@ class _RasterizeGaussians(torch.autograd.Function):
         args = (
             bg_tensor,
             means3D,
-            colors,
+            colors_precomp,
             opacities,
             scales,
             rotations,
@@ -241,7 +243,6 @@ class GaussianRasterizationSettings(NamedTuple):
     scale_modifier : float
     viewmatrix : torch.Tensor
     projmatrix : torch.Tensor
-    sh : torch.Tensor
     sh_degree : int
     campos : torch.Tensor
     prefiltered : bool
@@ -267,7 +268,6 @@ class GaussianRasterizer(nn.Module):
         
         raster_settings = self.raster_settings
         updated_sh = shs if shs is not None else torch.Tensor([])
-        raster_settings = raster_settings._replace(sh=updated_sh)
 
         if (shs is None and colors_precomp is None) or (shs is not None and colors_precomp is not None):
             raise Exception('Please provide excatly one of either SHs or precomputed colors!')
@@ -289,10 +289,12 @@ class GaussianRasterizer(nn.Module):
         return rasterize_gaussians(
             means3D,
             means2D,
+            updated_sh,
             colors_precomp,
             opacities,
             scales, 
             rotations,
             cov3D_precomp,
+            None,  # scores parameter
             raster_settings
         )
