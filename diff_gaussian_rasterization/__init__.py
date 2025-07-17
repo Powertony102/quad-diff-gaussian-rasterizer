@@ -59,6 +59,17 @@ class _RasterizeGaussians(torch.autograd.Function):
         raster_settings
     ):
 
+        # Defensive programming: ensure all tensor parameters are valid torch.Tensor objects
+        # This prevents AttributeError when non-tensor objects are passed
+        if not isinstance(colors_precomp, torch.Tensor):
+            colors_precomp = torch.empty(0, dtype=means3D.dtype, device=means3D.device)
+        
+        if not isinstance(sh, torch.Tensor):
+            sh = torch.empty(0, dtype=means3D.dtype, device=means3D.device)
+            
+        if not isinstance(cov3Ds_precomp, torch.Tensor):
+            cov3Ds_precomp = torch.empty(0, dtype=means3D.dtype, device=means3D.device)
+
         # Restructure arguments the way that the C++ lib expects them
         # The C++ function expects the complete SH tensor, not split into dc and rest
         if sh.numel() != 0:
