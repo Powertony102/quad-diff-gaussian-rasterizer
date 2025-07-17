@@ -263,6 +263,8 @@ class GaussianRasterizer(nn.Module):
         if cov3D_precomp is None:
             if scales is None or rotations is None:
                 raise Exception('Please provide either cov3D_precomp or scales and rotations!')
+            # Create empty tensor when cov3D_precomp is None
+            cov3D_precomp = torch.empty(0, device=means3D.device)
         
         # All clear, rasterize
         return rasterize_gaussians(
