@@ -278,6 +278,12 @@ int CudaRasterizer::Rasterizer::forward(
 	// Retrieve total number of Gaussian instances to launch and resize aux buffers
 	CHECK_CUDA(cudaMemcpy(&num_rendered, geomState.point_offsets + P - 1, sizeof(int), cudaMemcpyDeviceToHost), debug);
 
+    // 新增：全局tile-gaussian对数上限保护，防止溢出
+    const int MAX_TOTAL_TILES = 100000000; // 可根据显存和实际需求调整
+    if (num_rendered > MAX_TOTAL_TILES) {
+        throw std::runtime_error("Total number of tile-gaussian pairs exceeds safe limit (" + std::to_string(MAX_TOTAL_TILES) + "), possible overflow. Try reducing image resolution or number of Gaussians, or adjust MAX_TOTAL_TILES.");
+    }
+
 	size_t binning_chunk_size = required<BinningState>(num_rendered);
 	char* binning_chunkptr = binningBuffer(binning_chunk_size);
 	BinningState binningState = BinningState::fromChunk(binning_chunkptr, num_rendered);
