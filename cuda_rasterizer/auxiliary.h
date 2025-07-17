@@ -843,8 +843,47 @@ __device__ inline uint32_t duplicateToTilesTouched(
     // Combine all early exit conditions using bitwise operations to minimize branching
     // Requirements: 4.2, 4.3 - minimize branching for better SIMD utilization
     bool all_valid = valid_ellipse & valid_opacity & valid_threshold & valid_depth;
+    // Fallback: 如果参数不合法，直接 fallback 到 snugbox
     if (!all_valid) {
-        return 0;  // Early exit for invalid inputs
+        // 单 snugbox fallback
+        // 计算 snugbox 的 AABB
+        float A = con_o.x, B = con_o.y, C = con_o.z;
+        float2 center = clamped_center;
+        // 直接用四个极值点的最大最小包围盒
+        float x_extreme_offset = safeSqrt(-t * C / disc);
+        float y_extreme_offset = safeSqrt(-t * A / disc);
+        float x_min = center.x - x_extreme_offset;
+        float x_max = center.x + x_extreme_offset;
+        float y_min = center.y - y_extreme_offset;
+        float y_max = center.y + y_extreme_offset;
+        // clamp
+        x_min = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, fminf(DUAL_SNUGBOX_MAX_COORDINATE, x_min));
+        x_max = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, fminf(DUAL_SNUGBOX_MAX_COORDINATE, x_max));
+        y_min = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, fminf(DUAL_SNUGBOX_MAX_COORDINATE, y_min));
+        y_max = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, fminf(DUAL_SNUGBOX_MAX_COORDINATE, y_max));
+        // tile 范围
+        int rect_min_x = max(0, min((int)grid.x, (int)floorf(x_min / BLOCK_X)));
+        int rect_min_y = max(0, min((int)grid.y, (int)floorf(y_min / BLOCK_Y)));
+        int rect_max_x = max(0, min((int)grid.x, (int)ceilf(x_max / BLOCK_X)));
+        int rect_max_y = max(0, min((int)grid.y, (int)ceilf(y_max / BLOCK_Y)));
+        uint32_t tiles_count = 0;
+        for (int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
+            for (int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
+                if (tile_x < 0 || tile_x >= (int)grid.x || tile_y < 0 || tile_y >= (int)grid.y) continue;
+                tiles_count++;
+                if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                    uint64_t tile_id = (uint64_t)tile_y * grid.x + tile_x;
+                    if (tile_id >= ((uint64_t)grid.x * grid.y)) continue;
+                    uint64_t key = tile_id;
+                    key <<= 32;
+                    key |= *((uint32_t*)&depth);
+                    gaussian_keys_unsorted[off] = key;
+                    gaussian_values_unsorted[off] = idx;
+                    off++;
+                }
+            }
+        }
+        return tiles_count;
     }
     
     // Phase 2: Compute extreme points using analytical methods with error handling
