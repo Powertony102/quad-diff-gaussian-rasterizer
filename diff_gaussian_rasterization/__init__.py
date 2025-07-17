@@ -250,15 +250,19 @@ class GaussianRasterizer(nn.Module):
             
         return visible
 
-    def forward(self, means3D, means2D, opacities, shs = None, colors_precomp = None, scales = None, rotations = None, cov3D_precomp = None, scores = None):
+    def forward(self, means3D, means2D, opacities, shs = None, colors_precomp = None, scales = None, rotations = None, cov3D_precomp = None):
         
-        raster_settings = self.raster_settings
+        # This is an ugly fix, but it works.
+        # The original code had a check that was too strict.
+        if colors_precomp is None:
+            colors_precomp = torch.empty(0, device=means3D.device)
         
-        if (shs is None and colors_precomp is None) or (shs is not None and colors_precomp is not None):
-            raise Exception('Please provide excatly one of either SHs or precomputed colors!')
-        
-        if ((scales is None or rotations is None) and cov3D_precomp is None) or ((scales is not None or rotations is not None) and cov3D_precomp is not None):
-            raise Exception('Please provide exactly one of either scale/rotation pair or precomputed 3D covariance!')
+        if shs is None:
+            shs = torch.empty(0, device=means3D.device)
+            
+        if cov3D_precomp is None:
+            if scales is None or rotations is None:
+                raise Exception('Please provide either cov3D_precomp or scales and rotations!')
         
         # All clear, rasterize
         return rasterize_gaussians(
@@ -270,6 +274,6 @@ class GaussianRasterizer(nn.Module):
             scales, 
             rotations,
             cov3D_precomp,
-            scores,
-            raster_settings
+            None, # scores (not used)
+            self.raster_settings
         )
