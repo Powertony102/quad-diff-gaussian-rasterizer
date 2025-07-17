@@ -60,21 +60,27 @@ class _RasterizeGaussians(torch.autograd.Function):
     ):
 
         # Restructure arguments the way that the C++ lib expects them
-        # Split the SH coefficients into the direct color (dc, the first coefficient)
-        # and the remaining SH coefficients expected by the CUDA implementation.
+        # The C++ function expects the complete SH tensor, not split into dc and rest
         if sh.numel() != 0:
-            # dc : [P, 3] 取常数项，但仍保留完整 SH 数组以保持系数数量不变
-            dc = sh[:, 0, :].contiguous()
-            sh_rest = sh.contiguous()  # 不截断，避免 C++ 侧索引越界
+            sh_tensor = sh.contiguous()
         else:
-            # Empty tensors keep interface identical when SHs are not provided
-            dc = torch.Tensor([])
-            sh_rest = torch.Tensor([])
+            # Empty tensor when SHs are not provided
+            sh_tensor = torch.empty((0, 0, 0), dtype=means3D.dtype, device=means3D.device)
 
         # Ensure background is on the same device as means3D to avoid cross-device issues
         bg_tensor = raster_settings.bg
         if bg_tensor.device != means3D.device:
             bg_tensor = bg_tensor.to(means3D.device)
+
+        # Ensure empty tensors have correct device and dtype
+        if colors_precomp.numel() == 0:
+            colors_precomp = torch.empty((0, 3), dtype=means3D.dtype, device=means3D.device)
+        if cov3Ds_precomp.numel() == 0:
+            cov3Ds_precomp = torch.empty((0, 6), dtype=means3D.dtype, device=means3D.device)
+        if scales is not None and scales.numel() == 0:
+            scales = torch.empty((0, 3), dtype=means3D.dtype, device=means3D.device)
+        if rotations is not None and rotations.numel() == 0:
+            rotations = torch.empty((0, 4), dtype=means3D.dtype, device=means3D.device)
 
         args = (
             bg_tensor,
@@ -91,8 +97,7 @@ class _RasterizeGaussians(torch.autograd.Function):
             raster_settings.tanfovy,
             raster_settings.image_height,
             raster_settings.image_width,
-            dc,
-            sh_rest,
+            sh_tensor,
             raster_settings.sh_degree,
             raster_settings.campos,
             raster_settings.prefiltered,
@@ -103,18 +108,20 @@ class _RasterizeGaussians(torch.autograd.Function):
         if raster_settings.debug:
             cpu_args = cpu_deep_copy_tuple(args) # Copy them before they can be corrupted
             try:
-                num_rendered, num_buckets, color, invdepth, radii, geomBuffer, binningBuffer, imgBuffer, sampleBuffer = _C.rasterize_gaussians(*args)
+                num_rendered, color, radii, kernel_times, geomBuffer, binningBuffer, imgBuffer = _C.rasterize_gaussians(*args)
             except Exception as ex:
                 torch.save(cpu_args, "snapshot_fw.dump")
                 print("\nAn error occured in forward. Please forward snapshot_fw.dump for debugging.")
                 raise ex
         else:
-            num_rendered, num_buckets, color, invdepth, radii, geomBuffer, binningBuffer, imgBuffer, sampleBuffer = _C.rasterize_gaussians(*args)
+            num_rendered, color, radii, kernel_times, geomBuffer, binningBuffer, imgBuffer = _C.rasterize_gaussians(*args)
 
         # Save values required for backward
         ctx.raster_settings = raster_settings
         ctx.num_rendered = num_rendered  # R
-        ctx.num_buckets = num_buckets    # B
+
+        # Create invdepth tensor (depth information)
+        invdepth = torch.zeros_like(color[0:1])  # Same shape as one channel of color
 
         ctx.save_for_backward(
             colors_precomp,
@@ -124,12 +131,10 @@ class _RasterizeGaussians(torch.autograd.Function):
             rotations,
             cov3Ds_precomp,
             radii,
-            dc,
-            sh_rest,
+            sh_tensor,
             geomBuffer,
             binningBuffer,
             imgBuffer,
-            sampleBuffer,
             invdepth,
         )
 
@@ -141,7 +146,6 @@ class _RasterizeGaussians(torch.autograd.Function):
 
         # Restore necessary values from context
         num_rendered = ctx.num_rendered
-        num_buckets = ctx.num_buckets
         raster_settings = ctx.raster_settings
         (colors_precomp,
          opacities,
@@ -150,17 +154,15 @@ class _RasterizeGaussians(torch.autograd.Function):
          rotations,
          cov3Ds_precomp,
          radii,
-         dc,
-         sh_rest,
+         sh_tensor,
          geomBuffer,
          binningBuffer,
          imgBuffer,
-         sampleBuffer,
          invdepth_saved) = ctx.saved_tensors
 
         # Handle missing gradient for invdepth (can be None if not used)
         if grad_out_invdepth is None:
-            grad_out_invdepth = torch.Tensor([])
+            grad_out_invdepth = torch.empty((0,), dtype=means3D.dtype, device=means3D.device)
 
         # Restructure args as C++ method expects them
         bg_tensor = raster_settings.bg
@@ -172,7 +174,6 @@ class _RasterizeGaussians(torch.autograd.Function):
             means3D,
             radii,
             colors_precomp,
-            opacities,
             scales,
             rotations,
             raster_settings.scale_modifier,
@@ -182,17 +183,13 @@ class _RasterizeGaussians(torch.autograd.Function):
             raster_settings.tanfovx,
             raster_settings.tanfovy,
             grad_out_color,
-            dc,
-            sh_rest,
-            grad_out_invdepth,
+            sh_tensor,
             raster_settings.sh_degree,
             raster_settings.campos,
             geomBuffer,
-            ctx.num_rendered,
+            num_rendered,
             binningBuffer,
             imgBuffer,
-            ctx.num_buckets,
-            sampleBuffer,
             raster_settings.debug,
         )
 
@@ -200,29 +197,18 @@ class _RasterizeGaussians(torch.autograd.Function):
         if raster_settings.debug:
             cpu_args = cpu_deep_copy_tuple(args) # Copy them before they can be corrupted
             try:
-                grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D, grad_cov3Ds_precomp, grad_dc, grad_sh, grad_scales, grad_rotations = _C.rasterize_gaussians_backward(*args)
+                grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D, grad_cov3Ds_precomp, grad_sh, grad_scales, grad_rotations, grad_G2 = _C.rasterize_gaussians_backward(*args)
             except Exception as ex:
                 torch.save(cpu_args, "snapshot_bw.dump")
                 print("\nAn error occured in backward. Writing snapshot_bw.dump for debugging.\n")
                 raise ex
         else:
-             grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D, grad_cov3Ds_precomp, grad_dc, grad_sh, grad_scales, grad_rotations = _C.rasterize_gaussians_backward(*args)
-
-        # 将 grad_dc 写回 grad_sh 的第 0 阶系数位置，保持形状不变
-        if grad_sh.numel() != 0:
-            grad_sh_full = grad_sh.clone()
-            if grad_dc.numel() != 0:
-                grad_sh_full[:, 0:1, :] = grad_dc  # inplace 替换常数项梯度
-        elif grad_dc.numel() != 0:
-            # 无 SH 但有 dc 的异常情况，直接返回 dc 梯度形状兼容
-            grad_sh_full = grad_dc
-        else:
-            grad_sh_full = torch.Tensor([])
+             grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D, grad_cov3Ds_precomp, grad_sh, grad_scales, grad_rotations, grad_G2 = _C.rasterize_gaussians_backward(*args)
 
         grads = (
             grad_means3D,
             grad_means2D,
-            grad_sh_full,
+            grad_sh,
             grad_colors_precomp,
             grad_opacities,
             grad_scales,
