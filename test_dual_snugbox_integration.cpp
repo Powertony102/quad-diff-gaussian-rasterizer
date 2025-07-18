@@ -261,28 +261,44 @@ __host__ __device__ inline DualBox constructDualBoxes(
     if (left_count < 1 || right_count < 1) {
         return dual_box;
     }
+
+    // Original snugbox boundaries for clamping
+    const float snug_min_x = extremes.x_extremes.x;
+    const float snug_max_x = extremes.x_extremes.y;
+    const float snug_min_y = extremes.y_extremes.x;
+    const float snug_max_y = extremes.y_extremes.y;
     
     // Construct left AABB
-    float left_min_x = left_points_x[0], left_max_x = left_points_x[0];
-    float left_min_y = left_points_y[0], left_max_y = left_points_y[0];
+    float left_min_x = snug_min_x;
+    float left_min_y = snug_min_y;
+    float left_max_x = center.x;
+    float left_max_y = center.y;
+
+    // float left_min_x = left_points_x[0], left_max_x = left_points_x[0];
+    // float left_min_y = left_points_y[0], left_max_y = left_points_y[0];
     
-    for (int i = 1; i < left_count; i++) {
-        left_min_x = fminf(left_min_x, left_points_x[i]);
-        left_max_x = fmaxf(left_max_x, left_points_x[i]);
-        left_min_y = fminf(left_min_y, left_points_y[i]);
-        left_max_y = fmaxf(left_max_y, left_points_y[i]);
-    }
+    // for (int i = 1; i < left_count; i++) {
+    //     left_min_x = fminf(left_min_x, left_points_x[i]);
+    //     left_max_x = fmaxf(left_max_x, left_points_x[i]);
+    //     left_min_y = fminf(left_min_y, left_points_y[i]);
+    //     left_max_y = fmaxf(left_max_y, left_points_y[i]);
+    // }
     
     // Construct right AABB
-    float right_min_x = right_points_x[0], right_max_x = right_points_x[0];
-    float right_min_y = right_points_y[0], right_max_y = right_points_y[0];
+    float right_min_x = center.x;
+    float right_min_y = center.y;
+    float right_max_x = snug_max_x;
+    float right_max_y = snug_max_y;
+
+    // float right_min_x = right_points_x[0], right_max_x = right_points_x[0];
+    // float right_min_y = right_points_y[0], right_max_y = right_points_y[0];
     
-    for (int i = 1; i < right_count; i++) {
-        right_min_x = fminf(right_min_x, right_points_x[i]);
-        right_max_x = fmaxf(right_max_x, right_points_x[i]);
-        right_min_y = fminf(right_min_y, right_points_y[i]);
-        right_max_y = fmaxf(right_max_y, right_points_y[i]);
-    }
+    // for (int i = 1; i < right_count; i++) {
+    //     right_min_x = fminf(right_min_x, right_points_x[i]);
+    //     right_max_x = fmaxf(right_max_x, right_points_x[i]);
+    //     right_min_y = fminf(right_min_y, right_points_y[i]);
+    //     right_max_y = fmaxf(right_max_y, right_points_y[i]);
+    // }
     
     // Validate constructed boxes
     if (left_max_x <= left_min_x || left_max_y <= left_min_y ||
@@ -302,54 +318,42 @@ __host__ __device__ inline DualBox constructDualBoxes(
         right_width <= 0.0f || right_height <= 0.0f) {
         return dual_box;
     }
-    
-    // Apply stretching to left box
+
+    // Apply stretching to left box along its longer dimension, away from center
     if (left_width >= left_height) {
+        // Stretch horizontally towards center (rightward for left box)
         float stretch_amount = left_width * (stretch_factor - 1.0f);
         if (isfinite(stretch_amount) && stretch_amount >= 0.0f) {
-            left_max_x += stretch_amount;
+            left_max_x = left_max_x + stretch_amount; 
         }
-        // // Short edge shrink: center as symmetry axis, half original short edge
-        // float center_y = center.y;
-        // float half_short = 0.25f * left_height;
-        // left_min_y = center_y - half_short;
-        // left_max_y = center_y + half_short;
     } else {
-        float stretch_amount = left_height * (stretch_factor - 1.0f) * 0.5f;
+        // Stretch vertically away from center
+        float stretch_amount = left_height * (stretch_factor - 1.0f);
         if (isfinite(stretch_amount) && stretch_amount >= 0.0f) {
-            left_min_y -= stretch_amount;
-            left_max_y += stretch_amount;
+            left_max_y = left_max_y + stretch_amount; // Clamp to snugbox boundary
         }
-        // Short edge shrink: center as symmetry axis, half original short edge
-        // float center_x = center.x;
-        // float half_short = 0.25f * left_width;
-        // left_min_x = center_x - half_short;
-        // left_max_x = center_x + half_short;
     }
     
-    // Apply stretching to right box
+    // Apply stretching to right box along its longer dimension, away from center
     if (right_width >= right_height) {
+        // Stretch horizontally towards center (leftward for right box)
         float stretch_amount = right_width * (stretch_factor - 1.0f);
         if (isfinite(stretch_amount) && stretch_amount >= 0.0f) {
-            right_min_x -= stretch_amount;
+            right_min_x = right_min_x - stretch_amount; 
         }
-        // Short edge shrink: center as symmetry axis, half original short edge
-        // float center_y = center.y;
-        // float half_short = 0.25f * right_height;
-        // right_min_y = center_y - half_short;
-        // right_max_y = center_y + half_short;
     } else {
-        float stretch_amount = right_height * (stretch_factor - 1.0f) * 0.5f;
+        // Stretch vertically away from center
+        float stretch_amount = right_height * (stretch_factor - 1.0f);
         if (isfinite(stretch_amount) && stretch_amount >= 0.0f) {
-            right_min_y -= stretch_amount;
-            right_max_y += stretch_amount;
+            right_min_y = right_min_y - stretch_amount; 
         }
-        // Short edge shrink: center as symmetry axis, half original short edge
-        // float center_x = center.x;
-        // float half_short = 0.25f * right_width;
-        // right_min_x = center_x - half_short;
-        // right_max_x = center_x + half_short;
     }
+
+    left_min_y = snug_min_y;
+    left_min_x = snug_min_x;
+    
+    right_max_x = snug_max_x;
+    right_max_y = snug_max_y;
     
     // Apply final boundary clamping
     left_min_x = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, fminf(DUAL_SNUGBOX_MAX_COORDINATE, left_min_x));
@@ -481,47 +485,48 @@ struct IntegrationTestCase {
 };
 
 // Helper function to create ellipse coefficients from angle and aspect ratio
-float4 createEllipseCoefficients(float angle_rad, float aspect_ratio, float opacity = 1.0f) {
+static float last_a = 0.0f, last_b = 0.0f, last_aspect = 0.0f;
+float4 createEllipseCoefficients(float angle_rad, float aspect_ratio, float opacity = 1.0f, float a_major = 50.0f) {
     // Create ellipse with semi-axes a and b where aspect_ratio = a/b
-    float a = 30.0f;  // Major axis length (reduced for better numerical stability)
+    float a = fmaxf(a_major, 50.0f);  // Major axis length (主轴至少50)
     float b = a / aspect_ratio;  // Minor axis length
-    
-    // Ensure minimum axis length for numerical stability
+    // Ensure minimum axis length for数值稳定
     b = fmaxf(b, 5.0f);
     a = fmaxf(a, b);  // Ensure a >= b
-    
+    last_a = a;
+    last_b = b;
+    last_aspect = aspect_ratio;
+
     float cos_theta = cosf(angle_rad);
     float sin_theta = sinf(angle_rad);
     float cos2 = cos_theta * cos_theta;
     float sin2 = sin_theta * sin_theta;
     float sin_cos = sin_theta * cos_theta;
-    
+
     // Transform to conic form: Ax² + 2Bxy + Cy² = 1
-    // Use more stable formulation
     float inv_a2 = 1.0f / (a * a);
     float inv_b2 = 1.0f / (b * b);
-    
+
     float A = cos2 * inv_a2 + sin2 * inv_b2;
     float B = sin_cos * (inv_a2 - inv_b2);
     float C = sin2 * inv_a2 + cos2 * inv_b2;
-    
+
     // Ensure discriminant is negative (valid ellipse)
     float disc = B * B - A * C;
     if (disc >= 0.0f) {
-        // Force ellipse by adjusting B slightly
         B = B * 0.99f;
         disc = B * B - A * C;
         if (disc >= 0.0f) {
-            B = 0.0f;  // Make it axis-aligned if needed
+            B = 0.0f;
         }
     }
-    
+
     // Scale coefficients to ensure reasonable magnitude
-    float scale = 1.0f / fmaxf(fmaxf(A, C), fabsf(B));
-    A *= scale;
-    B *= scale;
-    C *= scale;
-    
+    // float scale = 1.0f / fmaxf(fmaxf(A, C), fabsf(B));
+    // A *= scale;
+    // B *= scale;
+    // C *= scale;
+
     return make_float4(A, B, C, opacity);
 }
 
@@ -533,19 +538,19 @@ bool testNoDuplicateTilePairs() {
     
     std::vector<IntegrationTestCase> test_cases = {
         // Horizontal ellipse that should generate overlapping boxes
-        {{createEllipseCoefficients(0.0f, 3.0f), {100.0f, 100.0f}, 0.0f, "Horizontal ellipse"},
+        {{createEllipseCoefficients(0.0f, 3.0f, 1.0f, 100.0f), {100.0f, 100.0f}, 0.0f, "Horizontal ellipse"},
          make_dim3(20, 20), "Horizontal ellipse overlap test"},
         
         // Vertical ellipse
-        {{createEllipseCoefficients(M_PI/2.0f, 3.0f), {100.0f, 100.0f}, 90.0f, "Vertical ellipse"},
+        {{createEllipseCoefficients(M_PI/2.0f, 3.0f, 1.0f, 100.0f), {100.0f, 100.0f}, 90.0f, "Vertical ellipse"},
          make_dim3(20, 20), "Vertical ellipse overlap test"},
         
         // 45-degree tilted ellipse
-        {{createEllipseCoefficients(M_PI/4.0f, 2.0f), {100.0f, 100.0f}, 45.0f, "45-degree ellipse"},
+        {{createEllipseCoefficients(M_PI/4.0f, 2.0f, 1.0f, 100.0f), {100.0f, 100.0f}, 45.0f, "45-degree ellipse"},
          make_dim3(20, 20), "45-degree ellipse overlap test"},
         
         // Large ellipse spanning many tiles
-        {{createEllipseCoefficients(M_PI/6.0f, 4.0f), {200.0f, 200.0f}, 30.0f, "Large ellipse"},
+        {{createEllipseCoefficients(M_PI/6.0f, 4.0f, 1.0f, 100.0f), {200.0f, 200.0f}, 30.0f, "Large ellipse"},
          make_dim3(30, 30), "Large ellipse overlap test"},
         
         // Small ellipse with minimal overlap
@@ -559,6 +564,10 @@ bool testNoDuplicateTilePairs() {
     for (const auto& test_case : test_cases) {
         test_count++;
         std::cout << "  Test " << test_count << ": " << test_case.test_name << std::endl;
+        // 输出椭圆参数
+        std::cout << "    Ellipse Center: (" << test_case.ellipse.center.x << ", " << test_case.ellipse.center.y << ")" << std::endl;
+        std::cout << "    Major Axis a: " << last_a << ", Minor Axis b: " << last_b << std::endl;
+        std::cout << "    Angle (deg): " << test_case.ellipse.angle_degrees << ", Aspect Ratio: " << last_aspect << std::endl;
         
         // Validate ellipse and compute parameters
         float disc;
@@ -578,6 +587,8 @@ bool testNoDuplicateTilePairs() {
             // Use default threshold if calculation fails
             t = 5.0f;  // Reasonable default for most ellipses
         }
+        // 输出 t
+        std::cout << "    t (for exp(-0.5 Q(x)) = threshold): " << t << std::endl;
         
         // Compute dual boxes
         ExtremePoints extremes = computeExtremePoints(test_case.ellipse.con_o, disc, t, test_case.ellipse.center);
@@ -586,6 +597,7 @@ bool testNoDuplicateTilePairs() {
         float theta_degrees = theta * 180.0f / M_PI;
         std::cout << "    Computed Tilt Angle: " << std::fixed << std::setprecision(2) << theta_degrees << " degrees" << std::endl;
         float stretch_factor = computeStretchingFactor(theta, 1.1f);
+        std::cout << "    Stretch Factor: " << std::fixed << std::setprecision(2) << stretch_factor << std::endl;
         
         DualBox dual_box = constructDualBoxes(extremes, test_case.ellipse.center, stretch_factor);
         
@@ -698,6 +710,8 @@ bool testCoverageCompleteness() {
             if (!isfinite(t) || t <= 0.0f) {
                 t = 5.0f;  // Reasonable default for most ellipses
             }
+            // 输出 t
+            std::cout << "    t (for exp(-0.5 Q(x)) = threshold): " << t << std::endl;
             
             // Compute dual boxes
             ExtremePoints extremes = computeExtremePoints(con_o, disc, t, center);
@@ -706,6 +720,7 @@ bool testCoverageCompleteness() {
             float theta_degrees = theta * 180.0f / M_PI;
             std::cout << "    Computed Tilt Angle: " << std::fixed << std::setprecision(2) << theta_degrees << " degrees" << std::endl;
             float stretch_factor = computeStretchingFactor(theta, 1.1f);
+            std::cout << "    Stretch Factor: " << std::fixed << std::setprecision(2) << stretch_factor << std::endl;
             
             DualBox dual_box = constructDualBoxes(extremes, center, stretch_factor);
             
@@ -854,6 +869,8 @@ bool testOverlappingBoxHandling() {
         if (!isfinite(t) || t <= 0.0f) {
             t = 5.0f;  // Reasonable default for most ellipses
         }
+        // 输出 t
+        std::cout << "    t (for exp(-0.5 Q(x)) = threshold): " << t << std::endl;
         
         // Compute dual boxes
         ExtremePoints extremes = computeExtremePoints(test_case.ellipse.con_o, disc, t, test_case.ellipse.center);
@@ -985,12 +1002,15 @@ bool testEdgeCases() {
             if (!isfinite(t) || t <= 0.0f) {
                 t = 5.0f;  // Reasonable default for most ellipses
             }
+            // 输出 t
+            std::cout << "    t (for exp(-0.5 Q(x)) = threshold): " << t << std::endl;
             ExtremePoints extremes = computeExtremePoints(con_o, disc, t, center);
             float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
             float theta = computeTiltAngle(cov2d);
             float theta_degrees = theta * 180.0f / M_PI;
             std::cout << "    Computed Tilt Angle: " << std::fixed << std::setprecision(2) << theta_degrees << " degrees" << std::endl;
             float stretch_factor = computeStretchingFactor(theta, 1.1f);
+            std::cout << "    Stretch Factor: " << std::fixed << std::setprecision(2) << stretch_factor << std::endl;
             
             DualBox dual_box = constructDualBoxes(extremes, center, stretch_factor);
             
@@ -1054,12 +1074,15 @@ bool testEdgeCases() {
             if (!isfinite(t) || t <= 0.0f) {
                 t = 5.0f;  // Reasonable default for most ellipses
             }
+            // 输出 t
+            std::cout << "    t (for exp(-0.5 Q(x)) = threshold): " << t << std::endl;
             ExtremePoints extremes = computeExtremePoints(con_o, disc, t, center);
             float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
             float theta = computeTiltAngle(cov2d);
             float theta_degrees = theta * 180.0f / M_PI;
             std::cout << "    Computed Tilt Angle: " << std::fixed << std::setprecision(2) << theta_degrees << " degrees" << std::endl;
             float stretch_factor = computeStretchingFactor(theta, 1.1f);
+            std::cout << "    Stretch Factor: " << std::fixed << std::setprecision(2) << stretch_factor << std::endl;
             
             DualBox dual_box = constructDualBoxes(extremes, center, stretch_factor);
             

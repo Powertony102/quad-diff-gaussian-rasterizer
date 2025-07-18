@@ -368,35 +368,32 @@ __device__ inline DualBox constructDualBoxes(
     dual_box.valid = false;
     
     // Validate input parameters
-    // Requirements: 6.2 - numerical stability safeguards
     if (!isfinite(center.x) || !isfinite(center.y) || 
         !isfinite(stretch_factor) || stretch_factor < 1.0f || stretch_factor > 3.0f) {
-        return dual_box;  // Invalid input parameters
+        return dual_box;
     }
     
-    // Collect all extreme points for partitioning with validation
+    // Collect all extreme points for partitioning
     float extreme_points_x[4] = {
-        extremes.x_extremes.x,  // x_min
-        extremes.x_extremes.y,  // x_max
-        extremes.x_coords_at_y_extremes.x,  // x at y_min
-        extremes.x_coords_at_y_extremes.y   // x at y_max
+        extremes.x_extremes.x,
+        extremes.x_extremes.y,
+        extremes.x_coords_at_y_extremes.x,
+        extremes.x_coords_at_y_extremes.y
     };
     
     float extreme_points_y[4] = {
-        extremes.y_coords_at_x_extremes.x,  // y at x_min
-        extremes.y_coords_at_x_extremes.y,  // y at x_max
-        extremes.y_extremes.x,  // y_min
-        extremes.y_extremes.y   // y_max
+        extremes.y_coords_at_x_extremes.x,
+        extremes.y_coords_at_x_extremes.y,
+        extremes.y_extremes.x,
+        extremes.y_extremes.y
     };
     
-    // Validate all extreme points for numerical stability
+    // Validate all extreme points
     for (int i = 0; i < 4; i++) {
         if (!isfinite(extreme_points_x[i]) || !isfinite(extreme_points_y[i])) {
-            return dual_box;  // Invalid extreme points
+            return dual_box;
         }
         
-        // Apply boundary clamping to extreme points
-        // Requirements: 6.3 - boundary clamping for screen-space coordinates
         extreme_points_x[i] = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, 
                                    fminf(DUAL_SNUGBOX_MAX_COORDINATE, extreme_points_x[i]));
         extreme_points_y[i] = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, 
@@ -404,130 +401,133 @@ __device__ inline DualBox constructDualBoxes(
     }
     
     // Partition extreme points based on x-coordinate relative to center
-    // Requirements: 1.2 - left-right partitioning based on Gaussian center x-coordinate
-    float left_points_x[5], left_points_y[5];  // +1 for center
-    float right_points_x[5], right_points_y[5]; // +1 for center
-    int left_count = 0, right_count = 0;
+    // float left_points_x[5], left_points_y[5];
+    // float right_points_x[5], right_points_y[5];
+    // int left_count = 0, right_count = 0;
     
-    // Add center point to both partitions
-    left_points_x[left_count] = center.x;
-    left_points_y[left_count] = center.y;
-    left_count++;
+    // // Add center point to both partitions
+    // left_points_x[left_count] = center.x;
+    // left_points_y[left_count] = center.y;
+    // left_count++;
     
-    right_points_x[right_count] = center.x;
-    right_points_y[right_count] = center.y;
-    right_count++;
+    // right_points_x[right_count] = center.x;
+    // right_points_y[right_count] = center.y;
+    // right_count++;
     
-    // Partition extreme points with safety checks
-    for (int i = 0; i < 4; i++) {
-        // Ensure we don't exceed array bounds
-        if (left_count >= 5 || right_count >= 5) {
-            return dual_box;  // Array bounds exceeded
-        }
+    // // Partition extreme points
+    // for (int i = 0; i < 4; i++) {
+    //     if (left_count >= 5 || right_count >= 5) {
+    //         return dual_box;
+    //     }
         
-        if (extreme_points_x[i] <= center.x) {
-            // Left partition
-            left_points_x[left_count] = extreme_points_x[i];
-            left_points_y[left_count] = extreme_points_y[i];
-            left_count++;
-        }
-        if (extreme_points_x[i] >= center.x) {
-            // Right partition (points on center line go to both)
-            right_points_x[right_count] = extreme_points_x[i];
-            right_points_y[right_count] = extreme_points_y[i];
-            right_count++;
-        }
-    }
+    //     if (extreme_points_x[i] <= center.x) {
+    //         left_points_x[left_count] = extreme_points_x[i];
+    //         left_points_y[left_count] = extreme_points_y[i];
+    //         left_count++;
+    //     }
+    //     if (extreme_points_x[i] >= center.x) {
+    //         right_points_x[right_count] = extreme_points_x[i];
+    //         right_points_y[right_count] = extreme_points_y[i];
+    //         right_count++;
+    //     }
+    // }
     
-    // Validate partition counts
-    if (left_count < 1 || right_count < 1) {
-        return dual_box;  // Invalid partitioning
-    }
+    // if (left_count < 1 || right_count < 1) {
+    //     return dual_box;
+    // }
+
+    // Original snugbox boundaries for clamping
+    const float snug_min_x = extremes.x_extremes.x;
+    const float snug_max_x = extremes.x_extremes.y;
+    const float snug_min_y = extremes.y_extremes.x;
+    const float snug_max_y = extremes.y_extremes.y;
     
-    // Construct left AABB from left partition points
-    // Requirements: 1.3 - asymmetric AABB construction using extreme points and center
-    float left_min_x = left_points_x[0], left_max_x = left_points_x[0];
-    float left_min_y = left_points_y[0], left_max_y = left_points_y[0];
+    // Construct left AABB
+    float left_min_x = snug_min_x;
+    float left_min_y = snug_min_y;
+    float left_max_x = center.x;
+    float left_max_y = center.y;
+
+    // float left_min_x = left_points_x[0], left_max_x = left_points_x[0];
+    // float left_min_y = left_points_y[0], left_max_y = left_points_y[0];
     
-    for (int i = 1; i < left_count; i++) {
-        left_min_x = fminf(left_min_x, left_points_x[i]);
-        left_max_x = fmaxf(left_max_x, left_points_x[i]);
-        left_min_y = fminf(left_min_y, left_points_y[i]);
-        left_max_y = fmaxf(left_max_y, left_points_y[i]);
-    }
+    // for (int i = 1; i < left_count; i++) {
+    //     left_min_x = fminf(left_min_x, left_points_x[i]);
+    //     left_max_x = fmaxf(left_max_x, left_points_x[i]);
+    //     left_min_y = fminf(left_min_y, left_points_y[i]);
+    //     left_max_y = fmaxf(left_max_y, left_points_y[i]);
+    // }
     
-    // Construct right AABB from right partition points
-    float right_min_x = right_points_x[0], right_max_x = right_points_x[0];
-    float right_min_y = right_points_y[0], right_max_y = right_points_y[0];
+    // Construct right AABB
+    float right_min_x = center.x;
+    float right_min_y = center.y;
+    float right_max_x = snug_max_x;
+    float right_max_y = snug_max_y;
+
+    // float right_min_x = right_points_x[0], right_max_x = right_points_x[0];
+    // float right_min_y = right_points_y[0], right_max_y = right_points_y[0];
     
-    for (int i = 1; i < right_count; i++) {
-        right_min_x = fminf(right_min_x, right_points_x[i]);
-        right_max_x = fmaxf(right_max_x, right_points_x[i]);
-        right_min_y = fminf(right_min_y, right_points_y[i]);
-        right_max_y = fmaxf(right_max_y, right_points_y[i]);
-    }
+    // for (int i = 1; i < right_count; i++) {
+    //     right_min_x = fminf(right_min_x, right_points_x[i]);
+    //     right_max_x = fmaxf(right_max_x, right_points_x[i]);
+    //     right_min_y = fminf(right_min_y, right_points_y[i]);
+    //     right_max_y = fmaxf(right_max_y, right_points_y[i]);
+    // }
     
-    // Validate constructed boxes for degenerate cases
-    // Requirements: 6.1, 6.2 - degenerate ellipse detection and numerical stability
+    // Validate constructed boxes
     if (left_max_x <= left_min_x || left_max_y <= left_min_y ||
         right_max_x <= right_min_x || right_max_y <= right_min_y) {
-        return dual_box;  // Degenerate boxes
+        return dual_box;
     }
     
-    // Apply adaptive stretching to box dimensions with safety checks
-    // Requirements: 2.5 - extend each half-box along its longer dimension away from center
+    // Apply adaptive stretching
     float left_width = left_max_x - left_min_x;
     float left_height = left_max_y - left_min_y;
     float right_width = right_max_x - right_min_x;
     float right_height = right_max_y - right_min_y;
     
-    // Validate box dimensions
     if (!isfinite(left_width) || !isfinite(left_height) || 
         !isfinite(right_width) || !isfinite(right_height) ||
         left_width <= 0.0f || left_height <= 0.0f ||
         right_width <= 0.0f || right_height <= 0.0f) {
-        return dual_box;  // Invalid box dimensions
+        return dual_box;
     }
-    
+
     // Apply stretching to left box along its longer dimension, away from center
     if (left_width >= left_height) {
-        // Stretch horizontally away from center (rightward for left box)
+        // Stretch horizontally towards center (rightward for left box)
         float stretch_amount = left_width * (stretch_factor - 1.0f);
         if (isfinite(stretch_amount) && stretch_amount >= 0.0f) {
-            left_max_x += stretch_amount;  // Extend rightward away from center
+            left_max_x = left_max_x + stretch_amount; 
         }
-        // Short edge: keep original
-        // left_min_y, left_max_y unchanged
     } else {
         // Stretch vertically away from center
-        float stretch_amount = left_height * (stretch_factor - 1.0f) * 0.5f;
+        float stretch_amount = left_height * (stretch_factor - 1.0f);
         if (isfinite(stretch_amount) && stretch_amount >= 0.0f) {
-            left_min_y -= stretch_amount;
-            left_max_y += stretch_amount;
+            left_max_y = left_max_y + stretch_amount; // Clamp to snugbox boundary
         }
-        // Short edge: keep original
-        // left_min_x, left_max_x unchanged
     }
     
     // Apply stretching to right box along its longer dimension, away from center
     if (right_width >= right_height) {
-        // Stretch horizontally away from center (leftward for right box)
+        // Stretch horizontally towards center (leftward for right box)
         float stretch_amount = right_width * (stretch_factor - 1.0f);
         if (isfinite(stretch_amount) && stretch_amount >= 0.0f) {
-            right_min_x -= stretch_amount;  // Extend leftward away from center
+            right_min_x = right_min_x - stretch_amount; 
         }
-        // Short edge: keep original
-        // right_min_y, right_max_y unchanged
     } else {
         // Stretch vertically away from center
-        float stretch_amount = right_height * (stretch_factor - 1.0f) * 0.5f;
+        float stretch_amount = right_height * (stretch_factor - 1.0f);
         if (isfinite(stretch_amount) && stretch_amount >= 0.0f) {
-            right_min_y -= stretch_amount;
-            right_max_y += stretch_amount;
+            right_min_y = right_min_y - stretch_amount; 
         }
-        // Short edge: keep original
-        // right_min_x, right_max_x unchanged
     }
+
+    left_min_y = snug_min_y;
+    left_min_x = snug_min_x;
+    
+    right_max_x = snug_max_x;
+    right_max_y = snug_max_y;
     
     // Apply final boundary clamping to constructed boxes
     // Requirements: 6.3 - boundary clamping for screen-space coordinates
