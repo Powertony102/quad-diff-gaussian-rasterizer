@@ -198,12 +198,11 @@ __device__ inline bool isValidEllipse(const float4& con_o, float& disc) {
     // Use fast GPU finite checks for better performance
     register bool finite_coeffs = __finite(A) & __finite(B) & __finite(C);
     
-    // Optimized aspect ratio check using reciprocal multiplication instead of division
-    // Requirements: 4.2 - use efficient GPU operations
-    register float inv_C = __frcp_rn(C);  // Fast reciprocal approximation
-    register float aspect_ratio_sq = A * inv_C;
-    register float max_aspect_sq = DUAL_SNUGBOX_MAX_ASPECT_RATIO * DUAL_SNUGBOX_MAX_ASPECT_RATIO;
-    register float min_aspect_sq = __frcp_rn(max_aspect_sq);  // 1/(max_aspect²)
+    // FIXED: More stable aspect ratio check using standard division
+    // Avoid fast reciprocal approximation that can cause numerical instability
+    register float aspect_ratio_sq = A / C;
+    register float max_aspect_sq = 100.0f * 100.0f;  // Reduced from 1000x1000 to 100x100 for stability
+    register float min_aspect_sq = 1.0f / max_aspect_sq;
     register bool valid_aspect = (aspect_ratio_sq < max_aspect_sq) & (aspect_ratio_sq > min_aspect_sq);
     
     // Single bitwise AND operation to combine all conditions - optimal for SIMD
@@ -827,109 +826,90 @@ __device__ inline uint32_t duplicateToTilesTouched(
     uint32_t* gaussian_values_unsorted
     )
 {
-    // ---- Dual-SnugBox Algorithm Implementation - PERFORMANCE OPTIMIZED ---- //
-    // Requirements: 4.1, 4.2, 4.3 - O(1) complexity, efficient GPU functions, minimize branching
+    // ---- Dual-SnugBox Fallback-Enabled Algorithm ---- //
     
-    // Phase 1: Enhanced ellipse validation and error handling - OPTIMIZED
-    // Requirements: 6.1, 6.2 - robust degenerate ellipse detection and numerical stability
+    // Phase 1: Fundamental ellipse validation. If this fails, we cannot proceed.
     float disc;
     bool valid_ellipse = isValidEllipse(con_o, disc);
     bool valid_opacity = passesOpacityThreshold(con_o.w);
-    
-    // FIXED: Compute threshold parameter t for Gaussian cutoff correctly
-    // For Gaussian exp(-0.5 * (Ax² + 2Bxy + Cy²)) = threshold
-    // We solve for the contour where the Gaussian equals 1/255 (minimum visible opacity)
-    float threshold = 1.0f / 255.0f;
-    float t = -2.0f * __logf(threshold);  // t = -2*ln(threshold) for the ellipse equation
-    
-    if (!isfinite(t) || t <= 0.0f) {
-        // Use default threshold if calculation fails
-        t = 5.0f;  // Reasonable default for most ellipses
-    }
-    
-    bool valid_threshold = isfinite(t) & (t > 0.0f);
-    
-    // Validate and clamp input coordinates using efficient operations
-    // Requirements: 6.3 - boundary clamping for screen-space coordinates
+    float t = 2.0f * logf(con_o.w * 255.0f);
+    bool valid_threshold = isfinite(t) & (t > DUAL_SNUGBOX_EPSILON);
     float2 clamped_center = clampCoordinates(p);
     bool valid_depth = isfinite(depth);
+
+    if (!(valid_ellipse && valid_opacity && valid_threshold && valid_depth)) {
+        return 0; // Fundamental validity failed, cannot compute any bounding box.
+    }
     
-    // Combine all early exit conditions using bitwise operations to minimize branching
-    // Requirements: 4.2, 4.3 - minimize branching for better SIMD utilization
-    bool all_valid = valid_ellipse & valid_opacity & valid_threshold & valid_depth;
-    // Fallback: 如果参数不合法，直接 fallback 到 snugbox
-    if (!all_valid) {
-        // FIXED: Safe single snugbox fallback with proper validation
-        float A = con_o.x, B = con_o.y, C = con_o.z;
-        float2 center = clamped_center;
-        
-        // Validate discriminant for fallback calculation
-        if (!isfinite(disc) || disc >= 0.0f) {
-            // If discriminant is invalid, use a conservative bounding box
-            float conservative_radius = 50.0f;  // Conservative radius for invalid ellipses
-            float x_min = center.x - conservative_radius;
-            float x_max = center.x + conservative_radius;
-            float y_min = center.y - conservative_radius;
-            float y_max = center.y + conservative_radius;
-            
-            // Apply clamping and tile calculation
-            x_min = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, fminf(DUAL_SNUGBOX_MAX_COORDINATE, x_min));
-            x_max = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, fminf(DUAL_SNUGBOX_MAX_COORDINATE, x_max));
-            y_min = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, fminf(DUAL_SNUGBOX_MAX_COORDINATE, y_min));
-            y_max = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, fminf(DUAL_SNUGBOX_MAX_COORDINATE, y_max));
-            
-            int rect_min_x = max(0, min((int)grid.x, (int)floorf(x_min / BLOCK_X)));
-            int rect_min_y = max(0, min((int)grid.y, (int)floorf(y_min / BLOCK_Y)));
-            int rect_max_x = max(0, min((int)grid.x, (int)ceilf(x_max / BLOCK_X)));
-            int rect_max_y = max(0, min((int)grid.y, (int)ceilf(y_max / BLOCK_Y)));
-            
-            uint32_t tiles_count = 0;
-            for (int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
-                for (int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
-                    if (tile_x < 0 || tile_x >= (int)grid.x || tile_y < 0 || tile_y >= (int)grid.y) continue;
-                    tiles_count++;
-                    if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                        uint64_t tile_id = (uint64_t)tile_y * grid.x + tile_x;
-                        if (tile_id >= ((uint64_t)grid.x * grid.y)) continue;
-                        uint64_t key = tile_id;
-                        key <<= 32;
-                        key |= *((uint32_t*)&depth);
-                        gaussian_keys_unsorted[off] = key;
-                        gaussian_values_unsorted[off] = idx;
-                        off++;
-                    }
-                }
+    // Phase 2: Compute extreme points. This is needed for both dual and single snugbox.
+    ExtremePoints extremes = computeExtremePoints(con_o, disc, t, clamped_center);
+    if (!isfinite(extremes.x_extremes.x) || !isfinite(extremes.x_extremes.y) ||
+        !isfinite(extremes.y_extremes.x) || !isfinite(extremes.y_extremes.y) ||
+        !isfinite(extremes.x_coords_at_y_extremes.x) || !isfinite(extremes.x_coords_at_y_extremes.y) ||
+        !isfinite(extremes.y_coords_at_x_extremes.x) || !isfinite(extremes.y_coords_at_x_extremes.y)) {
+        return 0; // Extreme points are invalid, cannot proceed.
+    }
+    
+    // Phase 3 & 4: Attempt to build a Dual Snugbox
+    bool use_dual_snugbox = true;
+    
+    float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
+    float theta = computeTiltAngle(cov2d);
+    if (!isfinite(theta)) {
+        theta = 0.0f; // Fallback for tilt angle
+    }
+    
+    float stretch_factor = computeStretchingFactor(theta, 1.1f);
+    if (!isfinite(stretch_factor) || stretch_factor < 1.0f || stretch_factor > 3.0f) {
+        stretch_factor = 1.0f; // Fallback for stretch factor
+    }
+    
+    DualBox dual_box = constructDualBoxes(extremes, clamped_center, stretch_factor);
+    if (!dual_box.valid) {
+        use_dual_snugbox = false;
+    } else {
+        // Additional validation of the constructed dual boxes
+        if (!isfinite(dual_box.left_box.x) || !isfinite(dual_box.left_box.y) ||
+            !isfinite(dual_box.left_box.z) || !isfinite(dual_box.left_box.w) ||
+            !isfinite(dual_box.right_box.x) || !isfinite(dual_box.right_box.y) ||
+            !isfinite(dual_box.right_box.z) || !isfinite(dual_box.right_box.w)) {
+            use_dual_snugbox = false;
+        } else {
+            float left_box_area = (dual_box.left_box.z - dual_box.left_box.x) * (dual_box.left_box.w - dual_box.left_box.y);
+            float right_box_area = (dual_box.right_box.z - dual_box.right_box.x) * (dual_box.right_box.w - dual_box.right_box.y);
+            const float MAX_BOX_AREA = 1e8f;
+            if (left_box_area > MAX_BOX_AREA || right_box_area > MAX_BOX_AREA || left_box_area < 0.0f || right_box_area < 0.0f) {
+                use_dual_snugbox = false;
             }
-            return tiles_count;
         }
-        
-        // Use validated discriminant for proper ellipse calculation
-        float x_extreme_offset = safeSqrt(-t * C / disc);
-        float y_extreme_offset = safeSqrt(-t * A / disc);
-        float x_min = center.x - x_extreme_offset;
-        float x_max = center.x + x_extreme_offset;
-        float y_min = center.y - y_extreme_offset;
-        float y_max = center.y + y_extreme_offset;
-        // clamp
-        x_min = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, fminf(DUAL_SNUGBOX_MAX_COORDINATE, x_min));
-        x_max = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, fminf(DUAL_SNUGBOX_MAX_COORDINATE, x_max));
-        y_min = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, fminf(DUAL_SNUGBOX_MAX_COORDINATE, y_min));
-        y_max = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, fminf(DUAL_SNUGBOX_MAX_COORDINATE, y_max));
-        // tile 范围
-        int rect_min_x = max(0, min((int)grid.x, (int)floorf(x_min / BLOCK_X)));
-        int rect_min_y = max(0, min((int)grid.y, (int)floorf(y_min / BLOCK_Y)));
-        int rect_max_x = max(0, min((int)grid.x, (int)ceilf(x_max / BLOCK_X)));
-        int rect_max_y = max(0, min((int)grid.y, (int)ceilf(y_max / BLOCK_Y)));
+    }
+
+    if (use_dual_snugbox)
+    {
+        // --- Success: Use Dual Snugbox Path ---
+        return generateUniqueTileIntersections(dual_box, grid, idx, off, depth,
+                                             gaussian_keys_unsorted, gaussian_values_unsorted);
+    }
+    else
+    {
+        // --- Fallback: Use Single Snugbox Path ---
+        float min_x = extremes.x_extremes.x;
+        float max_x = extremes.x_extremes.y;
+        float min_y = extremes.y_extremes.x;
+        float max_y = extremes.y_extremes.y;
+
+        int rect_min_x = max(0, min((int)grid.x, (int)floorf(min_x / BLOCK_X)));
+        int rect_min_y = max(0, min((int)grid.y, (int)floorf(min_y / BLOCK_Y)));
+        int rect_max_x = max(0, min((int)grid.x, (int)ceilf(max_x / BLOCK_X)));
+        int rect_max_y = max(0, min((int)grid.y, (int)ceilf(max_y / BLOCK_Y)));
+
         uint32_t tiles_count = 0;
         for (int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
             for (int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
-                if (tile_x < 0 || tile_x >= (int)grid.x || tile_y < 0 || tile_y >= (int)grid.y) continue;
                 tiles_count++;
-                if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                if (gaussian_keys_unsorted != nullptr) {
                     uint64_t tile_id = (uint64_t)tile_y * grid.x + tile_x;
-                    if (tile_id >= ((uint64_t)grid.x * grid.y)) continue;
-                    uint64_t key = tile_id;
-                    key <<= 32;
+                    uint64_t key = tile_id << 32;
                     key |= *((uint32_t*)&depth);
                     gaussian_keys_unsorted[off] = key;
                     gaussian_values_unsorted[off] = idx;
@@ -939,72 +919,6 @@ __device__ inline uint32_t duplicateToTilesTouched(
         }
         return tiles_count;
     }
-    
-    // Phase 2: Compute extreme points using analytical methods with error handling
-    // Requirements: 1.1, 4.1 - analytical ellipse methods for extreme point computation
-    ExtremePoints extremes = computeExtremePoints(con_o, disc, t, clamped_center);
-    
-    // Validate computed extreme points for numerical stability
-    // Requirements: 6.2 - numerical stability safeguards
-    if (!isfinite(extremes.x_extremes.x) || !isfinite(extremes.x_extremes.y) ||
-        !isfinite(extremes.y_extremes.x) || !isfinite(extremes.y_extremes.y) ||
-        !isfinite(extremes.x_coords_at_y_extremes.x) || !isfinite(extremes.x_coords_at_y_extremes.y) ||
-        !isfinite(extremes.y_coords_at_x_extremes.x) || !isfinite(extremes.y_coords_at_x_extremes.y)) {
-        return 0;  // Numerical instability in extreme point computation
-    }
-    
-    // Phase 3: Calculate tilt angle and stretching factor with error handling
-    // Requirements: 2.1, 2.2 - tilt angle calculation and stretching factor computation
-    float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
-    float theta = computeTiltAngle(cov2d);
-    
-    // Validate tilt angle computation
-    if (!isfinite(theta)) {
-        // Fallback to axis-aligned case if tilt angle computation fails
-        theta = 0.0f;
-    }
-    
-    float stretch_factor = computeStretchingFactor(theta, 1.1f);  // β = 1.1
-    
-    // Validate stretching factor
-    if (!isfinite(stretch_factor) || stretch_factor < 1.0f || stretch_factor > 3.0f) {
-        // Fallback to minimal stretching if computation fails
-        stretch_factor = 1.0f;
-    }
-    
-    // Phase 4: Construct dual boxes with adaptive stretching and error handling
-    // Requirements: 1.2, 1.3, 2.3, 2.4, 2.5 - dual-box construction with stretching
-    DualBox dual_box = constructDualBoxes(extremes, clamped_center, stretch_factor);
-    if (!dual_box.valid) {
-        return 0;  // Failed to construct valid boxes
-    }
-    
-    // Additional validation of constructed boxes
-    // Requirements: 6.2, 6.3 - numerical stability and boundary clamping
-    if (!isfinite(dual_box.left_box.x) || !isfinite(dual_box.left_box.y) ||
-        !isfinite(dual_box.left_box.z) || !isfinite(dual_box.left_box.w) ||
-        !isfinite(dual_box.right_box.x) || !isfinite(dual_box.right_box.y) ||
-        !isfinite(dual_box.right_box.z) || !isfinite(dual_box.right_box.w)) {
-        return 0;  // Invalid box coordinates
-    }
-    
-    // Check for reasonable box sizes to prevent excessive tile generation
-    float left_box_area = (dual_box.left_box.z - dual_box.left_box.x) * 
-                         (dual_box.left_box.w - dual_box.left_box.y);
-    float right_box_area = (dual_box.right_box.z - dual_box.right_box.x) * 
-                          (dual_box.right_box.w - dual_box.right_box.y);
-    
-    // Prevent boxes that are unreasonably large (potential numerical overflow)
-    const float MAX_BOX_AREA = 1e8f;  // Reasonable upper bound for box area
-    if (left_box_area > MAX_BOX_AREA || right_box_area > MAX_BOX_AREA ||
-        left_box_area < 0.0f || right_box_area < 0.0f) {
-        return 0;  // Box area is unreasonable
-    }
-    
-    // Phase 5: Generate unique tile intersections using union logic with error handling
-    // Requirements: 1.4, 5.1, 5.2, 5.3, 5.4 - unique tile intersection generation
-    return generateUniqueTileIntersections(dual_box, grid, idx, off, depth,
-                                         gaussian_keys_unsorted, gaussian_values_unsorted);
 }
 
 #define CHECK_CUDA(A, debug) \
