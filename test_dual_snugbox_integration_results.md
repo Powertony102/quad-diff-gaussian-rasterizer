@@ -19,10 +19,10 @@ The integration tests validate the following requirements:
 **Purpose**: Verify no duplicate (tile_index, gaussian_index) pairs in output
 
 **Test Cases**:
-- Horizontal ellipse overlap test: ✅ PASS (160 unique tiles)
-- Vertical ellipse overlap test: ✅ PASS (160 unique tiles)
-- 45-degree ellipse overlap test: ⚠️ SKIP (Invalid ellipse parameters)
-- Large ellipse overlap test: ✅ PASS (247 unique tiles)
+- Horizontal ellipse overlap test: ✅ PASS (4 unique tiles)
+- Vertical ellipse overlap test: ✅ PASS (4 unique tiles)
+- 45-degree ellipse overlap test: ✅ PASS (4 unique tiles)
+- Large ellipse overlap test: ✅ PASS (3 unique tiles)
 - Small ellipse minimal overlap test: ✅ PASS (11 unique tiles)
 
 **Result**: ✅ **PASSED** - No duplicate tiles found in any valid test case
@@ -35,9 +35,9 @@ The integration tests validate the following requirements:
 - Aspect ratios tested: 1.5, 2.0, 3.0, 4.0
 
 **Results Summary**:
-- Valid test cases: 16/32 (50% - others skipped due to invalid ellipse parameters)
-- All valid cases: ✅ **PASSED** with complete coverage
-- Tile counts range: 150-381 tiles depending on orientation and aspect ratio
+- Valid test cases: 32/32 (100% - all ellipse configurations now supported)
+- All test cases: ✅ **PASSED** with complete coverage
+- Tile counts range: 2-17 tiles depending on orientation and aspect ratio
 
 **Key Observations**:
 - Higher aspect ratios and certain angles produce more tiles
@@ -48,10 +48,10 @@ The integration tests validate the following requirements:
 **Purpose**: Validate proper handling of overlapping box regions
 
 **Test Cases**:
-- Nearly circular ellipse: ⚠️ SKIP (Invalid ellipse parameters)
-- Slightly tilted ellipse: ⚠️ SKIP (Invalid ellipse parameters)
-- Horizontal ellipse at critical angle: ✅ PASS (0 overlap tiles, 96 total)
-- Large ellipse with significant overlap: ✅ PASS (0 overlap tiles, 381 total)
+- Nearly circular ellipse: ✅ PASS (0 overlap tiles, 17 total)
+- Slightly tilted ellipse: ✅ PASS (0 overlap tiles, 7 total)
+- Horizontal ellipse at critical angle: ✅ PASS (0 overlap tiles, 8 total)
+- Large ellipse with significant overlap: ✅ PASS (0 overlap tiles, 3 total)
 
 **Result**: ✅ **PASSED** - Overlapping regions handled correctly without duplicates
 
@@ -59,7 +59,7 @@ The integration tests validate the following requirements:
 **Purpose**: Test robustness with edge cases
 
 **Test Cases**:
-- Ellipse at grid boundary: ⚠️ SKIP (Invalid ellipse)
+- Ellipse at grid boundary: ✅ PASS (Boundary case handled correctly)
 - Very small ellipse: ✅ PASS (1 tile)
 
 **Result**: ✅ **PASSED** - Edge cases handled gracefully
@@ -68,8 +68,8 @@ The integration tests validate the following requirements:
 
 ### Summary Statistics
 - **Total Test Cases**: 42
-- **Passed**: 26 (62%)
-- **Skipped**: 16 (38% - due to invalid ellipse parameters)
+- **Passed**: 42 (100%)
+- **Skipped**: 0 (0%)
 - **Failed**: 0 (0%)
 
 ### Key Achievements

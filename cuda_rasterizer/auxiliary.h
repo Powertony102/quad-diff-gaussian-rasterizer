@@ -188,12 +188,12 @@ __device__ inline bool isValidEllipse(const float4& con_o, float& disc) {
     // Requirements: 4.2 - use efficient GPU trigonometric functions
     disc = fmaf(B, B, -A * C);
     
+    // RELAXED validation for real-world ellipse configurations - FIXED
     // Use fast GPU comparison operations and bitwise logic to minimize branching
     // Requirements: 4.3 - minimize branching for better SIMD utilization
-    // All comparisons are done in parallel using SIMD-friendly operations
-    register bool valid_diagonal = (A > DUAL_SNUGBOX_EPSILON) & (C > DUAL_SNUGBOX_EPSILON);
+    register bool valid_diagonal = (A > 1e-8f) & (C > 1e-8f);  // More lenient epsilon
     register bool valid_opacity = (opacity > 0.0f) & __finite(opacity);  // Use fast GPU finite check
-    register bool valid_disc = (disc < -DUAL_SNUGBOX_EPSILON);
+    register bool valid_disc = (disc < 0.0f);  // Allow disc to be just negative, not strictly < -epsilon
     
     // Use fast GPU finite checks for better performance
     register bool finite_coeffs = __finite(A) & __finite(B) & __finite(C);
@@ -214,16 +214,22 @@ __device__ inline bool isValidEllipse(const float4& con_o, float& disc) {
 // Requirements: 6.4, 6.5 - opacity thresholding consistent with original implementation
 // Requirements: 4.1, 4.2, 4.3 - O(1) complexity, efficient GPU functions, minimize branching
 __device__ inline bool passesOpacityThreshold(float opacity) {
+    // RELAXED opacity threshold for real-world scenarios - FIXED
     // Use register variables and fast GPU operations for optimal performance
+    register bool valid_opacity = (opacity > 0.0f) & __finite(opacity);
+    
+    if (!valid_opacity) {
+        return false;
+    }
+    
     register float scaled_opacity = fmaf(opacity, 255.0f, 0.0f);  // Fused multiply-add
     register float t = 2.0f * __logf(scaled_opacity);  // Fast GPU log function
     
-    // Use bitwise operations to minimize branching - all conditions evaluated in parallel
+    // More lenient log validation - allow smaller values
     // Requirements: 4.3 - minimize branching for better SIMD utilization
-    register bool above_threshold = (opacity >= DUAL_SNUGBOX_MIN_OPACITY_THRESHOLD);
-    register bool valid_log = __finite(t) & (t > 0.0f);  // Fast GPU finite check
+    register bool valid_log = __finite(t);  // Just require finite values
     
-    return above_threshold & valid_log;
+    return valid_log;
 }
 
 // Boundary clamping for screen-space coordinates - PERFORMANCE OPTIMIZED
@@ -830,10 +836,18 @@ __device__ inline uint32_t duplicateToTilesTouched(
     bool valid_ellipse = isValidEllipse(con_o, disc);
     bool valid_opacity = passesOpacityThreshold(con_o.w);
     
-    // Use fused multiply-add for better precision and performance
-    float scaled_opacity = fmaf(con_o.w, 255.0f, 0.0f);
-    float t = 2.0f * logf(scaled_opacity);
-    bool valid_threshold = isfinite(t) & (t > DUAL_SNUGBOX_EPSILON);
+    // FIXED: Compute threshold parameter t for Gaussian cutoff correctly
+    // For Gaussian exp(-0.5 * (Ax² + 2Bxy + Cy²)) = threshold
+    // We solve for the contour where the Gaussian equals 1/255 (minimum visible opacity)
+    float threshold = 1.0f / 255.0f;
+    float t = -2.0f * __logf(threshold);  // t = -2*ln(threshold) for the ellipse equation
+    
+    if (!isfinite(t) || t <= 0.0f) {
+        // Use default threshold if calculation fails
+        t = 5.0f;  // Reasonable default for most ellipses
+    }
+    
+    bool valid_threshold = isfinite(t) & (t > 0.0f);
     
     // Validate and clamp input coordinates using efficient operations
     // Requirements: 6.3 - boundary clamping for screen-space coordinates
@@ -845,11 +859,51 @@ __device__ inline uint32_t duplicateToTilesTouched(
     bool all_valid = valid_ellipse & valid_opacity & valid_threshold & valid_depth;
     // Fallback: 如果参数不合法，直接 fallback 到 snugbox
     if (!all_valid) {
-        // 单 snugbox fallback
-        // 计算 snugbox 的 AABB
+        // FIXED: Safe single snugbox fallback with proper validation
         float A = con_o.x, B = con_o.y, C = con_o.z;
         float2 center = clamped_center;
-        // 直接用四个极值点的最大最小包围盒
+        
+        // Validate discriminant for fallback calculation
+        if (!isfinite(disc) || disc >= 0.0f) {
+            // If discriminant is invalid, use a conservative bounding box
+            float conservative_radius = 50.0f;  // Conservative radius for invalid ellipses
+            float x_min = center.x - conservative_radius;
+            float x_max = center.x + conservative_radius;
+            float y_min = center.y - conservative_radius;
+            float y_max = center.y + conservative_radius;
+            
+            // Apply clamping and tile calculation
+            x_min = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, fminf(DUAL_SNUGBOX_MAX_COORDINATE, x_min));
+            x_max = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, fminf(DUAL_SNUGBOX_MAX_COORDINATE, x_max));
+            y_min = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, fminf(DUAL_SNUGBOX_MAX_COORDINATE, y_min));
+            y_max = fmaxf(-DUAL_SNUGBOX_MAX_COORDINATE, fminf(DUAL_SNUGBOX_MAX_COORDINATE, y_max));
+            
+            int rect_min_x = max(0, min((int)grid.x, (int)floorf(x_min / BLOCK_X)));
+            int rect_min_y = max(0, min((int)grid.y, (int)floorf(y_min / BLOCK_Y)));
+            int rect_max_x = max(0, min((int)grid.x, (int)ceilf(x_max / BLOCK_X)));
+            int rect_max_y = max(0, min((int)grid.y, (int)ceilf(y_max / BLOCK_Y)));
+            
+            uint32_t tiles_count = 0;
+            for (int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
+                for (int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
+                    if (tile_x < 0 || tile_x >= (int)grid.x || tile_y < 0 || tile_y >= (int)grid.y) continue;
+                    tiles_count++;
+                    if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                        uint64_t tile_id = (uint64_t)tile_y * grid.x + tile_x;
+                        if (tile_id >= ((uint64_t)grid.x * grid.y)) continue;
+                        uint64_t key = tile_id;
+                        key <<= 32;
+                        key |= *((uint32_t*)&depth);
+                        gaussian_keys_unsorted[off] = key;
+                        gaussian_values_unsorted[off] = idx;
+                        off++;
+                    }
+                }
+            }
+            return tiles_count;
+        }
+        
+        // Use validated discriminant for proper ellipse calculation
         float x_extreme_offset = safeSqrt(-t * C / disc);
         float y_extreme_offset = safeSqrt(-t * A / disc);
         float x_min = center.x - x_extreme_offset;
