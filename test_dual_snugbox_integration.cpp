@@ -39,6 +39,12 @@ inline float3 make_float3(float x, float y, float z) { return {x, y, z}; }
 inline float4 make_float4(float x, float y, float z, float w) { return {x, y, z, w}; }
 inline dim3 make_dim3(unsigned int x, unsigned int y, unsigned int z = 1) { return {x, y, z}; }
 
+// Helper function to print box coordinates for debugging
+__host__ inline void printBox(const char* name, const float4& box) {
+    std::cout << "    " << name << ": (min_x=" << std::fixed << std::setprecision(2) << box.x 
+              << ", min_y=" << box.y << ", max_x=" << box.z << ", max_y=" << box.w << ")" << std::endl;
+}
+
 // Constants from auxiliary.h
 #define DUAL_SNUGBOX_EPSILON 1e-6f
 #define DUAL_SNUGBOX_MAX_ASPECT_RATIO 1000.0f
@@ -301,28 +307,48 @@ __host__ __device__ inline DualBox constructDualBoxes(
     if (left_width >= left_height) {
         float stretch_amount = left_width * (stretch_factor - 1.0f);
         if (isfinite(stretch_amount) && stretch_amount >= 0.0f) {
-            left_min_x -= stretch_amount;
+            left_max_x += stretch_amount;
         }
+        // // Short edge shrink: center as symmetry axis, half original short edge
+        // float center_y = center.y;
+        // float half_short = 0.25f * left_height;
+        // left_min_y = center_y - half_short;
+        // left_max_y = center_y + half_short;
     } else {
         float stretch_amount = left_height * (stretch_factor - 1.0f) * 0.5f;
         if (isfinite(stretch_amount) && stretch_amount >= 0.0f) {
             left_min_y -= stretch_amount;
             left_max_y += stretch_amount;
         }
+        // Short edge shrink: center as symmetry axis, half original short edge
+        // float center_x = center.x;
+        // float half_short = 0.25f * left_width;
+        // left_min_x = center_x - half_short;
+        // left_max_x = center_x + half_short;
     }
     
     // Apply stretching to right box
     if (right_width >= right_height) {
         float stretch_amount = right_width * (stretch_factor - 1.0f);
         if (isfinite(stretch_amount) && stretch_amount >= 0.0f) {
-            right_max_x += stretch_amount;
+            right_min_x -= stretch_amount;
         }
+        // Short edge shrink: center as symmetry axis, half original short edge
+        // float center_y = center.y;
+        // float half_short = 0.25f * right_height;
+        // right_min_y = center_y - half_short;
+        // right_max_y = center_y + half_short;
     } else {
         float stretch_amount = right_height * (stretch_factor - 1.0f) * 0.5f;
         if (isfinite(stretch_amount) && stretch_amount >= 0.0f) {
             right_min_y -= stretch_amount;
             right_max_y += stretch_amount;
         }
+        // Short edge shrink: center as symmetry axis, half original short edge
+        // float center_x = center.x;
+        // float half_short = 0.25f * right_width;
+        // right_min_x = center_x - half_short;
+        // right_max_x = center_x + half_short;
     }
     
     // Apply final boundary clamping
@@ -557,6 +583,8 @@ bool testNoDuplicateTilePairs() {
         ExtremePoints extremes = computeExtremePoints(test_case.ellipse.con_o, disc, t, test_case.ellipse.center);
         float3 cov2d = make_float3(test_case.ellipse.con_o.x, test_case.ellipse.con_o.y, test_case.ellipse.con_o.z);
         float theta = computeTiltAngle(cov2d);
+        float theta_degrees = theta * 180.0f / M_PI;
+        std::cout << "    Computed Tilt Angle: " << std::fixed << std::setprecision(2) << theta_degrees << " degrees" << std::endl;
         float stretch_factor = computeStretchingFactor(theta, 1.1f);
         
         DualBox dual_box = constructDualBoxes(extremes, test_case.ellipse.center, stretch_factor);
@@ -566,6 +594,14 @@ bool testNoDuplicateTilePairs() {
             continue;
         }
         
+        // Print box coordinates
+        float4 original_snugbox = make_float4(
+            extremes.x_extremes.x, extremes.y_extremes.x,
+            extremes.x_extremes.y, extremes.y_extremes.y);
+        printBox("Original SnugBox", original_snugbox);
+        printBox("DualBox (Left)", dual_box.left_box);
+        printBox("DualBox (Right)", dual_box.right_box);
+
         // Generate tile intersections
         TileIntersectionResult result = generateTileIntersections(dual_box, test_case.grid);
         
@@ -667,6 +703,8 @@ bool testCoverageCompleteness() {
             ExtremePoints extremes = computeExtremePoints(con_o, disc, t, center);
             float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
             float theta = computeTiltAngle(cov2d);
+            float theta_degrees = theta * 180.0f / M_PI;
+            std::cout << "    Computed Tilt Angle: " << std::fixed << std::setprecision(2) << theta_degrees << " degrees" << std::endl;
             float stretch_factor = computeStretchingFactor(theta, 1.1f);
             
             DualBox dual_box = constructDualBoxes(extremes, center, stretch_factor);
@@ -675,6 +713,14 @@ bool testCoverageCompleteness() {
                 std::cout << "    SKIP: Failed to construct valid dual boxes" << std::endl;
                 continue;
             }
+
+            // Print box coordinates
+            float4 original_snugbox = make_float4(
+                extremes.x_extremes.x, extremes.y_extremes.x,
+                extremes.x_extremes.y, extremes.y_extremes.y);
+            printBox("Original SnugBox", original_snugbox);
+            printBox("DualBox (Left)", dual_box.left_box);
+            printBox("DualBox (Right)", dual_box.right_box);
             
             // Generate tile intersections
             TileIntersectionResult result = generateTileIntersections(dual_box, grid);
@@ -813,6 +859,8 @@ bool testOverlappingBoxHandling() {
         ExtremePoints extremes = computeExtremePoints(test_case.ellipse.con_o, disc, t, test_case.ellipse.center);
         float3 cov2d = make_float3(test_case.ellipse.con_o.x, test_case.ellipse.con_o.y, test_case.ellipse.con_o.z);
         float theta = computeTiltAngle(cov2d);
+        float theta_degrees = theta * 180.0f / M_PI;
+        std::cout << "    Computed Tilt Angle: " << std::fixed << std::setprecision(2) << theta_degrees << " degrees" << std::endl;
         float stretch_factor = computeStretchingFactor(theta, 1.1f);
         
         DualBox dual_box = constructDualBoxes(extremes, test_case.ellipse.center, stretch_factor);
@@ -822,6 +870,14 @@ bool testOverlappingBoxHandling() {
             continue;
         }
         
+        // Print box coordinates
+        float4 original_snugbox = make_float4(
+            extremes.x_extremes.x, extremes.y_extremes.x,
+            extremes.x_extremes.y, extremes.y_extremes.y);
+        printBox("Original SnugBox", original_snugbox);
+        printBox("DualBox (Left)", dual_box.left_box);
+        printBox("DualBox (Right)", dual_box.right_box);
+
         // Analyze box overlap
         float left_box_area = (dual_box.left_box.z - dual_box.left_box.x) * 
                              (dual_box.left_box.w - dual_box.left_box.y);
@@ -932,11 +988,21 @@ bool testEdgeCases() {
             ExtremePoints extremes = computeExtremePoints(con_o, disc, t, center);
             float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
             float theta = computeTiltAngle(cov2d);
+            float theta_degrees = theta * 180.0f / M_PI;
+            std::cout << "    Computed Tilt Angle: " << std::fixed << std::setprecision(2) << theta_degrees << " degrees" << std::endl;
             float stretch_factor = computeStretchingFactor(theta, 1.1f);
             
             DualBox dual_box = constructDualBoxes(extremes, center, stretch_factor);
             
             if (dual_box.valid) {
+                // Print box coordinates
+                float4 original_snugbox = make_float4(
+                    extremes.x_extremes.x, extremes.y_extremes.x,
+                    extremes.x_extremes.y, extremes.y_extremes.y);
+                printBox("Original SnugBox", original_snugbox);
+                printBox("DualBox (Left)", dual_box.left_box);
+                printBox("DualBox (Right)", dual_box.right_box);
+
                 TileIntersectionResult result = generateTileIntersections(dual_box, grid);
                 
                 if (result.valid) {
@@ -991,11 +1057,21 @@ bool testEdgeCases() {
             ExtremePoints extremes = computeExtremePoints(con_o, disc, t, center);
             float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
             float theta = computeTiltAngle(cov2d);
+            float theta_degrees = theta * 180.0f / M_PI;
+            std::cout << "    Computed Tilt Angle: " << std::fixed << std::setprecision(2) << theta_degrees << " degrees" << std::endl;
             float stretch_factor = computeStretchingFactor(theta, 1.1f);
             
             DualBox dual_box = constructDualBoxes(extremes, center, stretch_factor);
             
             if (dual_box.valid) {
+                // Print box coordinates
+                float4 original_snugbox = make_float4(
+                    extremes.x_extremes.x, extremes.y_extremes.x,
+                    extremes.x_extremes.y, extremes.y_extremes.y);
+                printBox("Original SnugBox", original_snugbox);
+                printBox("DualBox (Left)", dual_box.left_box);
+                printBox("DualBox (Right)", dual_box.right_box);
+
                 TileIntersectionResult result = generateTileIntersections(dual_box, grid);
                 
                 if (result.valid) {

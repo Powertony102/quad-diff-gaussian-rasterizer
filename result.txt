@@ -8,97 +8,261 @@ Testing Requirements: 5.1, 5.2, 5.3, 5.4
 === Test 1: No Duplicate Tile Pairs ===
 Requirements: 5.1, 5.2, 5.3, 5.4 - Unique tile intersection generation
   Test 1: Horizontal ellipse overlap test
-    PASS: No duplicate tiles found (4 unique tiles)
+    Computed Tilt Angle: -90.00 degrees
+    Original SnugBox: (min_x=90.01, min_y=96.67, max_x=109.99, max_y=103.33)
+    DualBox (Left): (min_x=90.01, min_y=96.67, max_x=110.99, max_y=103.33)
+    DualBox (Right): (min_x=89.01, min_y=96.67, max_x=109.99, max_y=103.33)
+    PASS: No duplicate tiles found (2 unique tiles)
   Test 2: Vertical ellipse overlap test
+    Computed Tilt Angle: 0.00 degrees
+    Original SnugBox: (min_x=96.67, min_y=90.01, max_x=103.33, max_y=109.99)
+    DualBox (Left): (min_x=96.67, min_y=79.03, max_x=100.00, max_y=120.97)
+    DualBox (Right): (min_x=100.00, min_y=79.03, max_x=103.33, max_y=120.97)
     PASS: No duplicate tiles found (4 unique tiles)
   Test 3: 45-degree ellipse overlap test
+    Computed Tilt Angle: -45.00 degrees
+    Original SnugBox: (min_x=95.84, min_y=95.84, max_x=104.16, max_y=104.16)
+    DualBox (Left): (min_x=93.06, min_y=93.06, max_x=100.00, max_y=100.00)
+    DualBox (Right): (min_x=100.00, min_y=100.00, max_x=106.94, max_y=106.94)
     PASS: No duplicate tiles found (4 unique tiles)
   Test 4: Large ellipse overlap test
+    Computed Tilt Angle: -60.00 degrees
+    Original SnugBox: (min_x=189.80, min_y=193.65, max_x=210.20, max_y=206.35)
+    DualBox (Left): (min_x=188.03, min_y=192.54, max_x=206.59, max_y=200.00)
+    DualBox (Right): (min_x=193.41, min_y=200.00, max_x=211.97, max_y=207.46)
     PASS: No duplicate tiles found (3 unique tiles)
   Test 5: Small ellipse minimal overlap test
+    Computed Tilt Angle: 45.00 degrees
+    Original SnugBox: (min_x=37.84, min_y=37.84, max_x=62.16, max_y=62.16)
+    DualBox (Left): (min_x=25.69, min_y=50.00, max_x=50.00, max_y=74.31)
+    DualBox (Right): (min_x=50.00, min_y=25.69, max_x=74.31, max_y=50.00)
     PASS: No duplicate tiles found (11 unique tiles)
 No Duplicate Pairs Test: PASSED
 
 === Test 2: Coverage Completeness ===
 Requirements: 5.1, 5.2, 5.3, 5.4 - Complete ellipse coverage verification
   Test 1: Angle 0.0°, Aspect 1.5
+    Computed Tilt Angle: -90.00 degrees
+    Original SnugBox: (min_x=145.01, min_y=146.67, max_x=154.99, max_y=153.33)
+    DualBox (Left): (min_x=145.01, min_y=143.01, max_x=150.00, max_y=156.99)
+    DualBox (Right): (min_x=150.00, min_y=143.01, max_x=154.99, max_y=156.99)
     PASS: Complete coverage (2 tiles)
   Test 2: Angle 0.0°, Aspect 2.0
-    PASS: Complete coverage (3 tiles)
+    Computed Tilt Angle: -90.00 degrees
+    Original SnugBox: (min_x=143.34, min_y=146.67, max_x=156.66, max_y=153.33)
+    DualBox (Left): (min_x=143.34, min_y=146.67, max_x=157.32, max_y=153.33)
+    DualBox (Right): (min_x=142.68, min_y=146.67, max_x=156.66, max_y=153.33)
+    PASS: Complete coverage (2 tiles)
   Test 3: Angle 0.0°, Aspect 3.0
+    Computed Tilt Angle: -90.00 degrees
+    Original SnugBox: (min_x=140.01, min_y=146.67, max_x=159.99, max_y=153.33)
+    DualBox (Left): (min_x=140.01, min_y=146.67, max_x=160.99, max_y=153.33)
+    DualBox (Right): (min_x=139.01, min_y=146.67, max_x=159.99, max_y=153.33)
     PASS: Complete coverage (3 tiles)
   Test 4: Angle 0.0°, Aspect 4.0
-    PASS: Complete coverage (5 tiles)
+    Computed Tilt Angle: -90.00 degrees
+    Original SnugBox: (min_x=136.68, min_y=146.67, max_x=163.32, max_y=153.33)
+    DualBox (Left): (min_x=136.68, min_y=146.67, max_x=164.65, max_y=153.33)
+    DualBox (Right): (min_x=135.35, min_y=146.67, max_x=163.32, max_y=153.33)
+    PASS: Complete coverage (3 tiles)
   Test 5: Angle 30.0°, Aspect 1.5
-    PASS: Complete coverage (7 tiles)
+    Computed Tilt Angle: -60.00 degrees
+    Original SnugBox: (min_x=145.70, min_y=146.46, max_x=154.30, max_y=153.54)
+    DualBox (Left): (min_x=137.33, min_y=139.57, max_x=156.97, max_y=150.00)
+    DualBox (Right): (min_x=143.03, min_y=150.00, max_x=162.67, max_y=160.43)
+    PASS: Complete coverage (8 tiles)
   Test 6: Angle 30.0°, Aspect 2.0
-    PASS: Complete coverage (5 tiles)
+    Computed Tilt Angle: -60.00 degrees
+    Original SnugBox: (min_x=144.59, min_y=146.03, max_x=155.41, max_y=153.97)
+    DualBox (Left): (min_x=140.07, min_y=142.71, max_x=155.46, max_y=150.00)
+    DualBox (Right): (min_x=144.54, min_y=150.00, max_x=159.93, max_y=157.29)
+    PASS: Complete coverage (4 tiles)
   Test 7: Angle 30.0°, Aspect 3.0
+    Computed Tilt Angle: -60.00 degrees
+    Original SnugBox: (min_x=142.23, min_y=144.91, max_x=157.77, max_y=155.09)
+    DualBox (Left): (min_x=139.72, min_y=143.27, max_x=155.65, max_y=150.00)
+    DualBox (Right): (min_x=144.35, min_y=150.00, max_x=160.28, max_y=156.73)
     PASS: Complete coverage (5 tiles)
   Test 8: Angle 30.0°, Aspect 4.0
+    Computed Tilt Angle: -60.00 degrees
+    Original SnugBox: (min_x=139.80, min_y=143.65, max_x=160.20, max_y=156.35)
+    DualBox (Left): (min_x=138.03, min_y=142.54, max_x=156.59, max_y=150.00)
+    DualBox (Right): (min_x=143.41, min_y=150.00, max_x=161.97, max_y=157.46)
     PASS: Complete coverage (5 tiles)
   Test 9: Angle 45.0°, Aspect 1.5
+    Computed Tilt Angle: -45.00 degrees
+    Original SnugBox: (min_x=146.39, min_y=146.39, max_x=153.61, max_y=153.61)
+    DualBox (Left): (min_x=140.62, min_y=140.62, max_x=150.00, max_y=150.00)
+    DualBox (Right): (min_x=150.00, min_y=150.00, max_x=159.38, max_y=159.38)
     PASS: Complete coverage (4 tiles)
   Test 10: Angle 45.0°, Aspect 2.0
+    Computed Tilt Angle: -45.00 degrees
+    Original SnugBox: (min_x=145.84, min_y=145.84, max_x=154.16, max_y=154.16)
+    DualBox (Left): (min_x=143.06, min_y=143.06, max_x=150.00, max_y=150.00)
+    DualBox (Right): (min_x=150.00, min_y=150.00, max_x=156.94, max_y=156.94)
     PASS: Complete coverage (4 tiles)
   Test 11: Angle 45.0°, Aspect 3.0
+    Computed Tilt Angle: -45.00 degrees
+    Original SnugBox: (min_x=144.45, min_y=144.45, max_x=155.55, max_y=155.55)
+    DualBox (Left): (min_x=143.06, min_y=143.06, max_x=150.00, max_y=150.00)
+    DualBox (Right): (min_x=150.00, min_y=150.00, max_x=156.94, max_y=156.94)
     PASS: Complete coverage (4 tiles)
   Test 12: Angle 45.0°, Aspect 4.0
+    Computed Tilt Angle: -45.00 degrees
+    Original SnugBox: (min_x=142.93, min_y=142.93, max_x=157.07, max_y=157.07)
+    DualBox (Left): (min_x=141.98, min_y=141.98, max_x=150.00, max_y=150.00)
+    DualBox (Right): (min_x=150.00, min_y=150.00, max_x=158.02, max_y=158.02)
     PASS: Complete coverage (4 tiles)
   Test 13: Angle 60.0°, Aspect 1.5
+    Computed Tilt Angle: -30.00 degrees
+    Original SnugBox: (min_x=146.46, min_y=145.70, max_x=153.54, max_y=154.30)
+    DualBox (Left): (min_x=139.57, min_y=133.85, max_x=150.00, max_y=153.48)
+    DualBox (Right): (min_x=150.00, min_y=146.52, max_x=160.43, max_y=166.15)
     PASS: Complete coverage (7 tiles)
   Test 14: Angle 60.0°, Aspect 2.0
+    Computed Tilt Angle: -30.00 degrees
+    Original SnugBox: (min_x=146.03, min_y=144.59, max_x=153.97, max_y=155.41)
+    DualBox (Left): (min_x=142.71, min_y=137.34, max_x=150.00, max_y=152.73)
+    DualBox (Right): (min_x=150.00, min_y=147.27, max_x=157.29, max_y=162.66)
     PASS: Complete coverage (5 tiles)
   Test 15: Angle 60.0°, Aspect 3.0
+    Computed Tilt Angle: -30.00 degrees
+    Original SnugBox: (min_x=144.91, min_y=142.23, max_x=155.09, max_y=157.77)
+    DualBox (Left): (min_x=143.27, min_y=136.90, max_x=150.00, max_y=152.83)
+    DualBox (Right): (min_x=150.00, min_y=147.17, max_x=156.73, max_y=163.10)
     PASS: Complete coverage (5 tiles)
   Test 16: Angle 60.0°, Aspect 4.0
+    Computed Tilt Angle: -30.00 degrees
+    Original SnugBox: (min_x=143.65, min_y=139.80, max_x=156.35, max_y=160.20)
+    DualBox (Left): (min_x=142.54, min_y=134.73, max_x=150.00, max_y=153.29)
+    DualBox (Right): (min_x=150.00, min_y=146.71, max_x=157.46, max_y=165.27)
     PASS: Complete coverage (5 tiles)
   Test 17: Angle 90.0°, Aspect 1.5
+    Computed Tilt Angle: 0.00 degrees
+    Original SnugBox: (min_x=146.67, min_y=145.01, max_x=153.33, max_y=154.99)
+    DualBox (Left): (min_x=146.67, min_y=139.51, max_x=150.00, max_y=160.49)
+    DualBox (Right): (min_x=150.00, min_y=139.51, max_x=153.33, max_y=160.49)
     PASS: Complete coverage (3 tiles)
   Test 18: Angle 90.0°, Aspect 2.0
+    Computed Tilt Angle: 0.00 degrees
+    Original SnugBox: (min_x=146.67, min_y=143.34, max_x=153.33, max_y=156.66)
+    DualBox (Left): (min_x=146.67, min_y=136.02, max_x=150.00, max_y=163.98)
+    DualBox (Right): (min_x=150.00, min_y=136.02, max_x=153.33, max_y=163.98)
     PASS: Complete coverage (3 tiles)
   Test 19: Angle 90.0°, Aspect 3.0
+    Computed Tilt Angle: 0.00 degrees
+    Original SnugBox: (min_x=146.67, min_y=140.01, max_x=153.33, max_y=159.99)
+    DualBox (Left): (min_x=146.67, min_y=129.03, max_x=150.00, max_y=170.97)
+    DualBox (Right): (min_x=150.00, min_y=129.03, max_x=153.33, max_y=170.97)
     PASS: Complete coverage (3 tiles)
   Test 20: Angle 90.0°, Aspect 4.0
+    Computed Tilt Angle: 0.00 degrees
+    Original SnugBox: (min_x=146.67, min_y=136.68, max_x=153.33, max_y=163.32)
+    DualBox (Left): (min_x=146.67, min_y=122.04, max_x=150.00, max_y=177.96)
+    DualBox (Right): (min_x=150.00, min_y=122.04, max_x=153.33, max_y=177.96)
     PASS: Complete coverage (5 tiles)
   Test 21: Angle 120.0°, Aspect 1.5
+    Computed Tilt Angle: 30.00 degrees
+    Original SnugBox: (min_x=146.46, min_y=145.70, max_x=153.54, max_y=154.30)
+    DualBox (Left): (min_x=139.57, min_y=146.52, max_x=150.00, max_y=166.15)
+    DualBox (Right): (min_x=150.00, min_y=133.85, max_x=160.43, max_y=153.48)
     PASS: Complete coverage (7 tiles)
   Test 22: Angle 120.0°, Aspect 2.0
+    Computed Tilt Angle: 30.00 degrees
+    Original SnugBox: (min_x=146.03, min_y=144.59, max_x=153.97, max_y=155.41)
+    DualBox (Left): (min_x=142.71, min_y=147.27, max_x=150.00, max_y=162.66)
+    DualBox (Right): (min_x=150.00, min_y=137.34, max_x=157.29, max_y=152.73)
     PASS: Complete coverage (5 tiles)
   Test 23: Angle 120.0°, Aspect 3.0
+    Computed Tilt Angle: 30.00 degrees
+    Original SnugBox: (min_x=144.91, min_y=142.23, max_x=155.09, max_y=157.77)
+    DualBox (Left): (min_x=143.27, min_y=147.17, max_x=150.00, max_y=163.10)
+    DualBox (Right): (min_x=150.00, min_y=136.90, max_x=156.73, max_y=152.83)
     PASS: Complete coverage (5 tiles)
   Test 24: Angle 120.0°, Aspect 4.0
+    Computed Tilt Angle: 30.00 degrees
+    Original SnugBox: (min_x=143.65, min_y=139.80, max_x=156.35, max_y=160.20)
+    DualBox (Left): (min_x=142.54, min_y=146.71, max_x=150.00, max_y=165.27)
+    DualBox (Right): (min_x=150.00, min_y=134.73, max_x=157.46, max_y=153.29)
     PASS: Complete coverage (5 tiles)
   Test 25: Angle 135.0°, Aspect 1.5
+    Computed Tilt Angle: 45.00 degrees
+    Original SnugBox: (min_x=146.39, min_y=146.39, max_x=153.61, max_y=153.61)
+    DualBox (Left): (min_x=140.62, min_y=150.00, max_x=150.00, max_y=159.38)
+    DualBox (Right): (min_x=150.00, min_y=140.62, max_x=159.38, max_y=150.00)
     PASS: Complete coverage (3 tiles)
   Test 26: Angle 135.0°, Aspect 2.0
+    Computed Tilt Angle: 45.00 degrees
+    Original SnugBox: (min_x=145.84, min_y=145.84, max_x=154.16, max_y=154.16)
+    DualBox (Left): (min_x=143.06, min_y=150.00, max_x=150.00, max_y=156.94)
+    DualBox (Right): (min_x=150.00, min_y=143.06, max_x=156.94, max_y=150.00)
     PASS: Complete coverage (3 tiles)
   Test 27: Angle 135.0°, Aspect 3.0
+    Computed Tilt Angle: 45.00 degrees
+    Original SnugBox: (min_x=144.45, min_y=144.45, max_x=155.55, max_y=155.55)
+    DualBox (Left): (min_x=143.06, min_y=150.00, max_x=150.00, max_y=156.94)
+    DualBox (Right): (min_x=150.00, min_y=143.06, max_x=156.94, max_y=150.00)
     PASS: Complete coverage (3 tiles)
   Test 28: Angle 135.0°, Aspect 4.0
+    Computed Tilt Angle: 45.00 degrees
+    Original SnugBox: (min_x=142.93, min_y=142.93, max_x=157.07, max_y=157.07)
+    DualBox (Left): (min_x=141.98, min_y=150.00, max_x=150.00, max_y=158.02)
+    DualBox (Right): (min_x=150.00, min_y=141.98, max_x=158.02, max_y=150.00)
     PASS: Complete coverage (3 tiles)
   Test 29: Angle 150.0°, Aspect 1.5
-    PASS: Complete coverage (7 tiles)
+    Computed Tilt Angle: 60.00 degrees
+    Original SnugBox: (min_x=145.70, min_y=146.46, max_x=154.30, max_y=153.54)
+    DualBox (Left): (min_x=137.33, min_y=150.00, max_x=156.97, max_y=160.43)
+    DualBox (Right): (min_x=143.03, min_y=139.57, max_x=162.67, max_y=150.00)
+    PASS: Complete coverage (8 tiles)
   Test 30: Angle 150.0°, Aspect 2.0
-    PASS: Complete coverage (5 tiles)
+    Computed Tilt Angle: 60.00 degrees
+    Original SnugBox: (min_x=144.59, min_y=146.03, max_x=155.41, max_y=153.97)
+    DualBox (Left): (min_x=140.07, min_y=150.00, max_x=155.46, max_y=157.29)
+    DualBox (Right): (min_x=144.54, min_y=142.71, max_x=159.93, max_y=150.00)
+    PASS: Complete coverage (3 tiles)
   Test 31: Angle 150.0°, Aspect 3.0
+    Computed Tilt Angle: 60.00 degrees
+    Original SnugBox: (min_x=142.23, min_y=144.91, max_x=157.77, max_y=155.09)
+    DualBox (Left): (min_x=139.72, min_y=150.00, max_x=155.65, max_y=156.73)
+    DualBox (Right): (min_x=144.35, min_y=143.27, max_x=160.28, max_y=150.00)
     PASS: Complete coverage (5 tiles)
   Test 32: Angle 150.0°, Aspect 4.0
-    PASS: Complete coverage (5 tiles)
+    Computed Tilt Angle: 60.00 degrees
+    Original SnugBox: (min_x=139.80, min_y=143.65, max_x=160.20, max_y=156.35)
+    DualBox (Left): (min_x=138.03, min_y=150.00, max_x=156.59, max_y=157.46)
+    DualBox (Right): (min_x=143.41, min_y=142.54, max_x=161.97, max_y=150.00)
+    PASS: Complete coverage (6 tiles)
 Coverage Completeness Test: PASSED
 
 === Test 3: Overlapping Box Handling ===
 Requirements: 5.1, 5.2, 5.3, 5.4 - Proper handling of overlapping regions
   Test 1: Nearly circular ellipse with maximum overlap
+    Computed Tilt Angle: -45.00 degrees
+    Original SnugBox: (min_x=96.66, min_y=96.66, max_x=103.34, max_y=103.34)
+    DualBox (Left): (min_x=64.81, min_y=64.81, max_x=100.00, max_y=100.00)
+    DualBox (Right): (min_x=100.00, min_y=100.00, max_x=135.19, max_y=135.19)
     Box areas: Left=1238.6, Right=1238.6, Overlap=0.0
     PASS: Overlapping region handled correctly (0 overlap tiles, 17 total tiles)
   Test 2: Slightly tilted ellipse with moderate overlap
+    Computed Tilt Angle: -67.50 degrees
+    Original SnugBox: (min_x=114.07, min_y=116.23, max_x=125.93, max_y=123.77)
+    DualBox (Left): (min_x=107.35, min_y=111.96, max_x=129.84, max_y=120.00)
+    DualBox (Right): (min_x=110.16, min_y=120.00, max_x=132.65, max_y=128.04)
     Box areas: Left=180.9, Right=180.9, Overlap=0.0
-    PASS: Overlapping region handled correctly (0 overlap tiles, 7 total tiles)
+    PASS: Overlapping region handled correctly (0 overlap tiles, 9 total tiles)
   Test 3: Horizontal ellipse at critical stretching angle
-    Box areas: Left=139.6, Right=139.6, Overlap=0.0
-    PASS: Overlapping region handled correctly (0 overlap tiles, 8 total tiles)
+    Computed Tilt Angle: -90.00 degrees
+    Original SnugBox: (min_x=70.01, min_y=76.67, max_x=89.99, max_y=83.33)
+    DualBox (Left): (min_x=70.01, min_y=76.67, max_x=90.99, max_y=83.33)
+    DualBox (Right): (min_x=69.01, min_y=76.67, max_x=89.99, max_y=83.33)
+    Box areas: Left=139.6, Right=139.6, Overlap=133.0
+    PASS: Overlapping region handled correctly (4 overlap tiles, 4 total tiles)
   Test 4: Large ellipse with significant overlap
+    Computed Tilt Angle: -30.00 degrees
+    Original SnugBox: (min_x=195.50, min_y=193.43, max_x=204.50, max_y=206.57)
+    DualBox (Left): (min_x=193.31, min_y=187.54, max_x=200.00, max_y=202.69)
+    DualBox (Right): (min_x=200.00, min_y=197.31, max_x=206.69, max_y=212.46)
     Box areas: Left=101.3, Right=101.3, Overlap=0.0
     PASS: Overlapping region handled correctly (0 overlap tiles, 3 total tiles)
 Overlapping Box Handling Test: PASSED
@@ -106,8 +270,16 @@ Overlapping Box Handling Test: PASSED
 === Test 4: Edge Cases and Boundary Conditions ===
 Testing edge cases for robust tile culling system
   Test 4.1: Ellipse at grid boundary
+    Computed Tilt Angle: -90.00 degrees
+    Original SnugBox: (min_x=8.34, min_y=11.67, max_x=21.66, max_y=18.33)
+    DualBox (Left): (min_x=8.34, min_y=11.67, max_x=22.32, max_y=18.33)
+    DualBox (Right): (min_x=7.68, min_y=11.67, max_x=21.66, max_y=18.33)
     PASS: Boundary case handled correctly
   Test 4.2: Very small ellipse
+    Computed Tilt Angle: 0.00 degrees
+    Original SnugBox: (min_x=99.67, min_y=99.67, max_x=100.33, max_y=100.33)
+    DualBox (Left): (min_x=99.67, min_y=99.30, max_x=100.00, max_y=100.70)
+    DualBox (Right): (min_x=100.00, min_y=99.30, max_x=100.33, max_y=100.70)
     PASS: Small ellipse handled correctly (1 tiles)
 Edge Cases Test: PASSED
 

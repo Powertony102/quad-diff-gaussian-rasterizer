@@ -491,11 +491,13 @@ __device__ inline DualBox constructDualBoxes(
     
     // Apply stretching to left box along its longer dimension, away from center
     if (left_width >= left_height) {
-        // Stretch horizontally away from center (leftward for left box)
+        // Stretch horizontally away from center (rightward for left box)
         float stretch_amount = left_width * (stretch_factor - 1.0f);
         if (isfinite(stretch_amount) && stretch_amount >= 0.0f) {
-            left_min_x -= stretch_amount;  // Extend leftward away from center
+            left_max_x += stretch_amount;  // Extend rightward away from center
         }
+        // Short edge: keep original
+        // left_min_y, left_max_y unchanged
     } else {
         // Stretch vertically away from center
         float stretch_amount = left_height * (stretch_factor - 1.0f) * 0.5f;
@@ -503,15 +505,19 @@ __device__ inline DualBox constructDualBoxes(
             left_min_y -= stretch_amount;
             left_max_y += stretch_amount;
         }
+        // Short edge: keep original
+        // left_min_x, left_max_x unchanged
     }
     
     // Apply stretching to right box along its longer dimension, away from center
     if (right_width >= right_height) {
-        // Stretch horizontally away from center (rightward for right box)
+        // Stretch horizontally away from center (leftward for right box)
         float stretch_amount = right_width * (stretch_factor - 1.0f);
         if (isfinite(stretch_amount) && stretch_amount >= 0.0f) {
-            right_max_x += stretch_amount;  // Extend rightward away from center
+            right_min_x -= stretch_amount;  // Extend leftward away from center
         }
+        // Short edge: keep original
+        // right_min_y, right_max_y unchanged
     } else {
         // Stretch vertically away from center
         float stretch_amount = right_height * (stretch_factor - 1.0f) * 0.5f;
@@ -519,6 +525,8 @@ __device__ inline DualBox constructDualBoxes(
             right_min_y -= stretch_amount;
             right_max_y += stretch_amount;
         }
+        // Short edge: keep original
+        // right_min_x, right_max_x unchanged
     }
     
     // Apply final boundary clamping to constructed boxes
