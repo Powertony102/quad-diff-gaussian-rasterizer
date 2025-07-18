@@ -267,13 +267,75 @@ __device__ inline float computeTiltAngle(const float3& cov2d) {
     return 0.5f * atan2f(numerator, denominator);
 }
 
-// Compute stretching factor s(θ) = 1 + β|cos(2θ)| where β ∈ [1.0, 1.2]
-// When θ ≈ 0° or 90°: s ≈ 2.0 (maximum stretching)
-// When θ ≈ 45°: s = 1.0 (minimal stretching)
+// Compute eccentricity of a 2D Gaussian ellipse
+// The ellipse is defined by Ax² + 2Bxy + Cy² = const
+// Requirements: A, B, C are conic coefficients from con_o
+__device__ inline float computeEccentricity(const float4& con_o) {
+    float A = con_o.x;
+    float B = con_o.y;
+    float C = con_o.z;
+
+    // The matrix M = [[A, B], [B, C]] is related to the inverse of the 2D Gaussian's covariance matrix.
+    // The eccentricity 'e' can be derived from the eigenvalues of M.
+    // e = sqrt(1 - (lambda_min / lambda_max)), where lambda_min and lambda_max
+    // are the smaller and larger eigenvalues of M.
+
+    float diff_AC = A - C;
+    // Using fmaf for potentially better performance on some hardware
+    float term_under_sqrt = fmaf(diff_AC, diff_AC, 4.0f * B * B);
+    float term_sqrt = sqrtf(term_under_sqrt);
+    
+    float sum_AC = A + C;
+
+    // Eigenvalues of M
+    float lambda_max = (sum_AC + term_sqrt) / 2.0f;
+    float lambda_min = (sum_AC - term_sqrt) / 2.0f;
+
+    // For a valid ellipse, lambda_max should be positive.
+    if (lambda_max <= 1e-8f) {
+        return 0.0f; // Represents a circle or a point, eccentricity is 0.
+    }
+
+    float ratio = lambda_min / lambda_max;
+
+    // Clamp ratio to [0, 1] for numerical stability before taking square root.
+    // For a valid ellipse (AC - B^2 > 0), lambda_min >= 0, so ratio should be >= 0.
+    // Clamping to 0 handles any minor floating point inaccuracies.
+    ratio = fmaxf(0.0f, ratio);
+    
+    return sqrtf(1.0f - ratio);
+}
+
+// Compute stretching factor based on tilt angle and eccentricity.
+// The formula is derived to apply adaptive stretching.
 // Requirements: 2.2, 2.3, 2.4
-__device__ inline float computeStretchingFactor(float theta, float beta = 1.1f) {
-    // s(θ) = 1 + β|cos(2θ)|
-    return 1.0f + beta * fabsf(cosf(2.0f * theta));
+__device__ inline float computeStretchingFactor(
+    float theta, 
+    float eccentricity) 
+{
+    // The new formula is: (1 + sin^2(2 * theta) * (e^4 / (4 * (1 - e^2)))^-1)
+    // which simplifies to 1 + sin^2(2 * theta) * (4 * (1 - e^2)) / e^4
+
+    // Handle eccentricity close to 0 (a circle) to avoid division by zero.
+    if (eccentricity < 1e-6f) {
+        return 1.0f; // No stretching for a circle.
+    }
+    
+    // Handle eccentricity close to 1 (a line) to avoid issues.
+    if (eccentricity > 0.99999f) {
+        return 1.0f; // Minimal stretching for very eccentric ellipses.
+    }
+
+    float sin_2theta = sinf(2.0f * theta);
+    float sin_2theta_sq = sin_2theta * sin_2theta;
+
+    float e_sq = eccentricity * eccentricity;
+    float e_4 = e_sq * e_sq;
+    
+    // This term determines the magnitude of the stretch based on eccentricity.
+    float stretch_modifier = e_4 / (4.0f * (1.0f - e_sq));
+
+    return 1.0f / __fsqrt_rn(1.0f + sin_2theta_sq * stretch_modifier) + 1.0f;
 }
 
 // Compute extreme points of ellipse using analytical methods with enhanced error handling
@@ -972,7 +1034,8 @@ __device__ inline uint32_t duplicateToTilesTouched(
         theta = 0.0f;
     }
     
-    float stretch_factor = computeStretchingFactor(theta, 1.1f);  // β = 1.1
+    float eccentricity = computeEccentricity(con_o); // Compute eccentricity
+    float stretch_factor = computeStretchingFactor(theta, eccentricity); // Use new computeStretchingFactor
     
     // Validate stretching factor
     if (!isfinite(stretch_factor) || stretch_factor < 1.0f || stretch_factor > 3.0f) {

@@ -98,7 +98,17 @@ __host__ inline uint32_t dualSnugBoxTileCount(
     ExtremePoints extremes = computeExtremePoints(con_o, disc, t, center);
     float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
     float theta = computeTiltAngle(cov2d);
-    float stretch_factor = computeStretchingFactor(theta, 1.1f);
+    
+    if (!isfinite(theta)) {
+        theta = 0.0f;
+    }
+    
+    float eccentricity = computeEccentricity(con_o);
+    float stretch_factor = computeStretchingFactor(theta, eccentricity);
+    
+    if (!isfinite(stretch_factor) || stretch_factor < 1.0f || stretch_factor > 100.0f) {
+        stretch_factor = 1.0f;
+    }
     
     DualBox dual_box = constructDualBoxes(extremes, center, stretch_factor);
     

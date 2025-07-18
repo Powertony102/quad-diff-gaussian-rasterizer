@@ -5,379 +5,2040 @@ Testing Requirements: 5.1, 5.2, 5.3, 5.4
 - Validate proper handling of overlapping box regions
 
 
-=== Test 1: No Duplicate Tile Pairs ===
+=== Test 1: No Duplicate Tile Pairs (Randomized) ===
 Requirements: 5.1, 5.2, 5.3, 5.4 - Unique tile intersection generation
-  Test 1: Horizontal ellipse overlap test
-    Ellipse Center: (100, 100)
-    Major Axis a: 100, Minor Axis b: 25
-    Angle (deg): 0, Aspect Ratio: 4
-    t (for exp(-0.5 Q(x)) = threshold): 11.0825
-    Computed Tilt Angle: -90.00 degrees
-    Stretch Factor: 2.10
-    Original SnugBox: (min_x=-232.90, min_y=-10.97, max_x=432.90, max_y=210.97)
-    DualBox (Left): (min_x=-232.90, min_y=-10.97, max_x=466.19, max_y=100.00)
-    DualBox (Right): (min_x=-266.19, min_y=100.00, max_x=432.90, max_y=210.97)
-    PASS: No duplicate tiles found (280 unique tiles)
-  Test 2: Vertical ellipse overlap test
-    Ellipse Center: (100.00, 100.00)
-    Major Axis a: 100.00, Minor Axis b: 25.00
-    Angle (deg): 90.00, Aspect Ratio: 4.00
-    t (for exp(-0.5 Q(x)) = threshold): 11.08
-    Computed Tilt Angle: 0.00 degrees
-    Stretch Factor: 2.10
-    Original SnugBox: (min_x=-10.97, min_y=-232.90, max_x=210.97, max_y=432.90)
-    DualBox (Left): (min_x=-10.97, min_y=-232.90, max_x=100.00, max_y=466.19)
-    DualBox (Right): (min_x=100.00, min_y=-266.19, max_x=210.97, max_y=432.90)
-    PASS: No duplicate tiles found (280 unique tiles)
-  Test 3: 45-degree ellipse overlap test
-    Ellipse Center: (100.00, 100.00)
-    Major Axis a: 100.00, Minor Axis b: 25.00
-    Angle (deg): 45.00, Aspect Ratio: 4.00
-    t (for exp(-0.5 Q(x)) = threshold): 11.08
-    Computed Tilt Angle: -45.00 degrees
-    Stretch Factor: 1.00
-    Original SnugBox: (min_x=-163.18, min_y=-163.18, max_x=363.18, max_y=363.18)
-    DualBox (Left): (min_x=-163.18, min_y=-163.18, max_x=100.00, max_y=100.00)
-    DualBox (Right): (min_x=100.00, min_y=100.00, max_x=363.18, max_y=363.18)
-    PASS: No duplicate tiles found (244 unique tiles)
-  Test 4: Large ellipse overlap test
-    Ellipse Center: (200.00, 200.00)
-    Major Axis a: 100.00, Minor Axis b: 25.00
-    Angle (deg): 30.00, Aspect Ratio: 4.00
-    t (for exp(-0.5 Q(x)) = threshold): 11.08
-    Computed Tilt Angle: -60.00 degrees
-    Stretch Factor: 1.55
-    Original SnugBox: (min_x=-91.29, min_y=18.61, max_x=491.29, max_y=381.39)
-    DualBox (Left): (min_x=-91.29, min_y=18.61, max_x=360.21, max_y=200.00)
-    DualBox (Right): (min_x=39.79, min_y=200.00, max_x=491.29, max_y=381.39)
-    PASS: No duplicate tiles found (591 unique tiles)
-  Test 5: Small ellipse minimal overlap test
-    Ellipse Center: (50.00, 50.00)
-    Major Axis a: 100.00, Minor Axis b: 25.00
-    Angle (deg): 0.00, Aspect Ratio: 4.00
-    t (for exp(-0.5 Q(x)) = threshold): 11.08
-    Computed Tilt Angle: 45.00 degrees
-    Stretch Factor: 1.00
-    Original SnugBox: (min_x=37.84, min_y=37.84, max_x=62.16, max_y=62.16)
-    DualBox (Left): (min_x=37.84, min_y=37.84, max_x=50.00, max_y=50.00)
-    DualBox (Right): (min_x=50.00, min_y=50.00, max_x=62.16, max_y=62.16)
-    PASS: No duplicate tiles found (4 unique tiles)
+  Test 1: Randomized Overlap Test (Angle: 134.8)
+    Ellipse Params: A=0.001626, B=0.001569, C=0.001608, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 44.83 degrees
+    Eccentricity: 0.992516
+    Stretch Factor: 1.24
+    Original SnugBox: (min_x=-238.04, min_y=-75.40, max_x=448.10, max_y=614.59)
+    DualBox (Left): (min_x=-238.04, min_y=-75.40, max_x=105.03, max_y=352.62)
+    DualBox (Right): (min_x=105.03, min_y=186.58, max_x=448.10, max_y=614.59)
+    PASS: No duplicate tiles found (586 unique tiles)
+  Test 2: Randomized Overlap Test (Angle: 280.7)
+    Ellipse Params: A=0.003319, B=0.000611, C=0.000198, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 10.69 degrees
+    Eccentricity: 0.987825
+    Stretch Factor: 1.66
+    Original SnugBox: (min_x=9.04, min_y=-175.22, max_x=184.57, max_y=542.72)
+    DualBox (Left): (min_x=9.04, min_y=-175.22, max_x=96.81, max_y=420.09)
+    DualBox (Right): (min_x=96.81, min_y=-52.59, max_x=184.57, max_y=542.72)
+    PASS: No duplicate tiles found (342 unique tiles)
+  Test 3: Randomized Overlap Test (Angle: 56.2)
+    Ellipse Params: A=0.000977, B=-0.000439, C=0.000616, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -33.84 degrees
+    Eccentricity: 0.864537
+    Stretch Factor: 1.82
+    Original SnugBox: (min_x=58.47, min_y=147.02, max_x=317.08, max_y=472.69)
+    DualBox (Left): (min_x=58.47, min_y=147.02, max_x=187.77, max_y=444.01)
+    DualBox (Right): (min_x=187.77, min_y=175.69, max_x=317.08, max_y=472.69)
+    PASS: No duplicate tiles found (333 unique tiles)
+  Test 4: Randomized Overlap Test (Angle: 120.1)
+    Ellipse Params: A=0.007590, B=0.004266, C=0.002718, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 30.14 degrees
+    Eccentricity: 0.987908
+    Stretch Factor: 1.34
+    Original SnugBox: (min_x=151.21, min_y=59.43, max_x=373.63, max_y=431.10)
+    DualBox (Left): (min_x=151.21, min_y=59.43, max_x=262.42, max_y=309.12)
+    DualBox (Right): (min_x=262.42, min_y=181.41, max_x=373.63, max_y=431.10)
+    PASS: No duplicate tiles found (255 unique tiles)
+  Test 5: Randomized Overlap Test (Angle: 7.4)
+    Ellipse Params: A=0.000047, B=-0.000009, C=0.000118, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -82.59 degrees
+    Eccentricity: 0.781268
+    Stretch Factor: 1.99
+    Original SnugBox: (min_x=-220.25, min_y=-9.66, max_x=753.45, max_y=609.13)
+    DualBox (Left): (min_x=-220.25, min_y=-9.66, max_x=749.68, max_y=299.73)
+    DualBox (Right): (min_x=-216.49, min_y=299.73, max_x=753.45, max_y=609.13)
+    PASS: No duplicate tiles found (900 unique tiles)
+  Test 6: Randomized Overlap Test (Angle: 337.9)
+    Ellipse Params: A=0.000848, B=0.001104, C=0.003116, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 67.88 degrees
+    Eccentricity: 0.942407
+    Stretch Factor: 1.73
+    Original SnugBox: (min_x=-51.31, min_y=266.37, max_x=260.41, max_y=428.96)
+    DualBox (Left): (min_x=-51.31, min_y=266.37, max_x=218.89, max_y=347.66)
+    DualBox (Right): (min_x=-9.80, min_y=347.66, max_x=260.41, max_y=428.96)
+    PASS: No duplicate tiles found (172 unique tiles)
+  Test 7: Randomized Overlap Test (Angle: 66.0)
+    Ellipse Params: A=0.005641, B=-0.002440, C=0.001239, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -23.97 degrees
+    Eccentricity: 0.988439
+    Stretch Factor: 1.39
+    Original SnugBox: (min_x=118.56, min_y=-37.77, max_x=348.43, max_y=452.62)
+    DualBox (Left): (min_x=118.56, min_y=-37.77, max_x=233.50, max_y=301.98)
+    DualBox (Right): (min_x=233.50, min_y=112.87, max_x=348.43, max_y=452.62)
+    PASS: No duplicate tiles found (316 unique tiles)
+  Test 8: Randomized Overlap Test (Angle: 2.5)
+    Ellipse Params: A=0.000382, B=-0.000380, C=0.008918, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -87.46 degrees
+    Eccentricity: 0.979333
+    Stretch Factor: 1.98
+    Original SnugBox: (min_x=-36.60, min_y=171.41, max_x=311.33, max_y=243.45)
+    DualBox (Left): (min_x=-36.60, min_y=171.41, max_x=307.61, max_y=207.43)
+    DualBox (Right): (min_x=-32.87, min_y=207.43, max_x=311.33, max_y=243.45)
+    PASS: No duplicate tiles found (120 unique tiles)
+  Test 9: Randomized Overlap Test (Angle: 220.3)
+    Ellipse Params: A=0.002360, B=-0.002497, C=0.003192, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -49.73 degrees
+    Eccentricity: 0.976691
+    Stretch Factor: 1.42
+    Original SnugBox: (min_x=-101.11, min_y=-4.31, max_x=229.11, max_y=279.59)
+    DualBox (Left): (min_x=-101.11, min_y=-4.31, max_x=132.53, max_y=137.64)
+    DualBox (Right): (min_x=-4.53, min_y=137.64, max_x=229.11, max_y=279.59)
+    PASS: No duplicate tiles found (222 unique tiles)
+  Test 10: Randomized Overlap Test (Angle: 350.6)
+    Ellipse Params: A=0.000277, B=0.000543, C=0.003451, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 80.55 degrees
+    Eccentricity: 0.973350
+    Stretch Factor: 1.83
+    Original SnugBox: (min_x=-53.99, min_y=9.00, max_x=427.63, max_y=145.36)
+    DualBox (Left): (min_x=-53.99, min_y=9.00, max_x=386.97, max_y=77.18)
+    DualBox (Right): (min_x=-13.33, min_y=77.18, max_x=427.63, max_y=145.36)
+    PASS: No duplicate tiles found (262 unique tiles)
+  Test 11: Randomized Overlap Test (Angle: 282.7)
+    Ellipse Params: A=0.008490, B=0.001862, C=0.000623, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 12.66 degrees
+    Eccentricity: 0.988468
+    Stretch Factor: 1.59
+    Original SnugBox: (min_x=103.16, min_y=-23.12, max_x=226.32, max_y=431.66)
+    DualBox (Left): (min_x=103.16, min_y=-23.12, max_x=164.74, max_y=337.69)
+    DualBox (Right): (min_x=164.74, min_y=70.85, max_x=226.32, max_y=431.66)
+    PASS: No duplicate tiles found (207 unique tiles)
+  Test 12: Randomized Overlap Test (Angle: 354.0)
+    Ellipse Params: A=0.000154, B=0.000443, C=0.004298, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 83.96 degrees
+    Eccentricity: 0.987611
+    Stretch Factor: 1.84
+    Original SnugBox: (min_x=-256.16, min_y=247.42, max_x=384.03, max_y=368.55)
+    DualBox (Left): (min_x=-256.16, min_y=247.42, max_x=332.31, max_y=307.98)
+    DualBox (Right): (min_x=-204.44, min_y=307.98, max_x=384.03, max_y=368.55)
+    PASS: No duplicate tiles found (209 unique tiles)
+  Test 13: Randomized Overlap Test (Angle: 218.7)
+    Ellipse Params: A=0.004590, B=-0.005448, C=0.007019, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -51.28 degrees
+    Eccentricity: 0.990184
+    Stretch Factor: 1.28
+    Original SnugBox: (min_x=9.89, min_y=-72.21, max_x=360.41, max_y=211.24)
+    DualBox (Left): (min_x=9.89, min_y=-72.21, max_x=234.29, max_y=69.52)
+    DualBox (Right): (min_x=136.01, min_y=69.52, max_x=360.41, max_y=211.24)
+    PASS: No duplicate tiles found (218 unique tiles)
+  Test 14: Randomized Overlap Test (Angle: 4.8)
+    Ellipse Params: A=0.000078, B=-0.000359, C=0.004350, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -85.22 degrees
+    Eccentricity: 0.994497
+    Stretch Factor: 1.79
+    Original SnugBox: (min_x=-138.78, min_y=154.88, max_x=818.16, max_y=283.10)
+    DualBox (Left): (min_x=-138.78, min_y=154.88, max_x=716.38, max_y=218.99)
+    DualBox (Right): (min_x=-37.00, min_y=218.99, max_x=818.16, max_y=283.10)
+    PASS: No duplicate tiles found (270 unique tiles)
+  Test 15: Randomized Overlap Test (Angle: 291.0)
+    Ellipse Params: A=0.002782, B=0.001010, C=0.000543, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 21.02 degrees
+    Eccentricity: 0.975333
+    Stretch Factor: 1.57
+    Original SnugBox: (min_x=-56.03, min_y=-171.63, max_x=165.60, max_y=330.23)
+    DualBox (Left): (min_x=-56.03, min_y=-171.63, max_x=54.79, max_y=222.22)
+    DualBox (Right): (min_x=54.79, min_y=-63.62, max_x=165.60, max_y=330.23)
+    PASS: No duplicate tiles found (210 unique tiles)
+  Test 16: Randomized Overlap Test (Angle: 83.1)
+    Ellipse Params: A=0.009281, B=-0.001098, C=0.000315, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -6.88 degrees
+    Eccentricity: 0.990280
+    Stretch Factor: 1.77
+    Original SnugBox: (min_x=136.95, min_y=10.03, max_x=227.14, max_y=499.93)
+    DualBox (Left): (min_x=136.95, min_y=10.03, max_x=182.05, max_y=442.70)
+    DualBox (Right): (min_x=182.05, min_y=67.26, max_x=227.14, max_y=499.93)
+    PASS: No duplicate tiles found (192 unique tiles)
+  Test 17: Randomized Overlap Test (Angle: 43.9)
+    Ellipse Params: A=0.002124, B=-0.002100, C=0.002281, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -46.07 degrees
+    Eccentricity: 0.988201
+    Stretch Factor: 1.30
+    Original SnugBox: (min_x=58.79, min_y=-172.43, max_x=541.12, max_y=293.07)
+    DualBox (Left): (min_x=58.79, min_y=-172.43, max_x=372.19, max_y=60.32)
+    DualBox (Right): (min_x=227.73, min_y=60.32, max_x=541.12, max_y=293.07)
+    PASS: No duplicate tiles found (330 unique tiles)
+  Test 18: Randomized Overlap Test (Angle: 62.4)
+    Ellipse Params: A=0.008388, B=-0.004317, C=0.002382, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -27.59 degrees
+    Eccentricity: 0.994066
+    Stretch Factor: 1.26
+    Original SnugBox: (min_x=-12.69, min_y=-158.66, max_x=267.96, max_y=368.00)
+    DualBox (Left): (min_x=-12.69, min_y=-158.66, max_x=127.63, max_y=172.88)
+    DualBox (Right): (min_x=127.63, min_y=36.46, max_x=267.96, max_y=368.00)
+    PASS: No duplicate tiles found (299 unique tiles)
+  Test 19: Randomized Overlap Test (Angle: 238.5)
+    Ellipse Params: A=0.006795, B=-0.004070, C=0.002645, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -31.49 degrees
+    Eccentricity: 0.991796
+    Stretch Factor: 1.28
+    Original SnugBox: (min_x=33.35, min_y=-25.11, max_x=321.75, max_y=437.15)
+    DualBox (Left): (min_x=33.35, min_y=-25.11, max_x=177.55, max_y=270.75)
+    DualBox (Right): (min_x=177.55, min_y=141.29, max_x=321.75, max_y=437.15)
+    PASS: No duplicate tiles found (361 unique tiles)
+  Test 20: Randomized Overlap Test (Angle: 74.9)
+    Ellipse Params: A=0.002915, B=-0.000765, C=0.000295, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -15.14 degrees
+    Eccentricity: 0.985851
+    Stretch Factor: 1.56
+    Original SnugBox: (min_x=-3.75, min_y=-284.06, max_x=214.67, max_y=402.85)
+    DualBox (Left): (min_x=-3.75, min_y=-284.06, max_x=105.46, max_y=253.31)
+    DualBox (Right): (min_x=105.46, min_y=-134.52, max_x=214.67, max_y=402.85)
+    PASS: No duplicate tiles found (304 unique tiles)
+  Test 21: Randomized Overlap Test (Angle: 349.1)
+    Ellipse Params: A=0.000223, B=0.000836, C=0.004383, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 79.05 degrees
+    Eccentricity: 0.993211
+    Stretch Factor: 1.53
+    Original SnugBox: (min_x=-231.95, min_y=237.77, max_x=601.80, max_y=425.93)
+    DualBox (Left): (min_x=-231.95, min_y=237.77, max_x=407.73, max_y=331.85)
+    DualBox (Right): (min_x=-37.88, min_y=331.85, max_x=601.80, max_y=425.93)
+    PASS: No duplicate tiles found (366 unique tiles)
+  Test 22: Randomized Overlap Test (Angle: 142.3)
+    Ellipse Params: A=0.001543, B=0.001930, C=0.002542, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 52.25 degrees
+    Eccentricity: 0.993895
+    Stretch Factor: 1.22
+    Original SnugBox: (min_x=-147.55, min_y=-25.50, max_x=606.29, max_y=561.86)
+    DualBox (Left): (min_x=-147.55, min_y=-25.50, max_x=314.11, max_y=268.18)
+    DualBox (Right): (min_x=144.63, min_y=268.18, max_x=606.29, max_y=561.86)
+    PASS: No duplicate tiles found (623 unique tiles)
+  Test 23: Randomized Overlap Test (Angle: 331.9)
+    Ellipse Params: A=0.001254, B=0.001807, C=0.003669, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 61.87 degrees
+    Eccentricity: 0.968346
+    Stretch Factor: 1.54
+    Original SnugBox: (min_x=46.82, min_y=6.87, max_x=395.44, max_y=210.72)
+    DualBox (Left): (min_x=46.82, min_y=6.87, max_x=315.13, max_y=108.79)
+    DualBox (Right): (min_x=127.14, min_y=108.79, max_x=395.44, max_y=210.72)
+    PASS: No duplicate tiles found (257 unique tiles)
+  Test 24: Randomized Overlap Test (Angle: 187.5)
+    Ellipse Params: A=0.000048, B=-0.000008, C=0.000105, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -82.50 degrees
+    Eccentricity: 0.746356
+    Stretch Factor: 1.99
+    Original SnugBox: (min_x=-336.52, min_y=-23.83, max_x=631.72, max_y=630.55)
+    DualBox (Left): (min_x=-336.52, min_y=-23.83, max_x=628.90, max_y=303.36)
+    DualBox (Right): (min_x=-333.70, min_y=303.36, max_x=631.72, max_y=630.55)
+    PASS: No duplicate tiles found (900 unique tiles)
+  Test 25: Randomized Overlap Test (Angle: 139.9)
+    Ellipse Params: A=0.004284, B=0.004892, C=0.005982, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 49.92 degrees
+    Eccentricity: 0.991643
+    Stretch Factor: 1.26
+    Original SnugBox: (min_x=14.26, min_y=131.37, max_x=409.55, max_y=465.87)
+    DualBox (Left): (min_x=14.26, min_y=131.37, max_x=262.77, max_y=298.62)
+    DualBox (Right): (min_x=161.04, min_y=298.62, max_x=409.55, max_y=465.87)
+    PASS: No duplicate tiles found (372 unique tiles)
+  Test 26: Randomized Overlap Test (Angle: 211.2)
+    Ellipse Params: A=0.000263, B=-0.000357, C=0.000635, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -58.77 degrees
+    Eccentricity: 0.972258
+    Stretch Factor: 1.49
+    Original SnugBox: (min_x=-287.00, min_y=-38.97, max_x=555.56, max_y=503.19)
+    DualBox (Left): (min_x=-287.00, min_y=-38.97, max_x=339.60, max_y=232.11)
+    DualBox (Right): (min_x=-71.04, min_y=232.11, max_x=555.56, max_y=503.19)
+    PASS: No duplicate tiles found (788 unique tiles)
+  Test 27: Randomized Overlap Test (Angle: 195.4)
+    Ellipse Params: A=0.000443, B=-0.000725, C=0.002880, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -74.63 degrees
+    Eccentricity: 0.959654
+    Stretch Factor: 1.77
+    Original SnugBox: (min_x=-67.47, min_y=209.76, max_x=345.23, max_y=371.56)
+    DualBox (Left): (min_x=-67.47, min_y=209.76, max_x=297.11, max_y=290.66)
+    DualBox (Right): (min_x=-19.35, min_y=290.66, max_x=345.23, max_y=371.56)
+    PASS: No duplicate tiles found (227 unique tiles)
+  Test 28: Randomized Overlap Test (Angle: 59.5)
+    Ellipse Params: A=0.000965, B=-0.000347, C=0.000581, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -30.50 degrees
+    Eccentricity: 0.823681
+    Stretch Factor: 1.89
+    Original SnugBox: (min_x=225.13, min_y=21.09, max_x=467.00, max_y=332.95)
+    DualBox (Left): (min_x=225.13, min_y=21.09, max_x=346.07, max_y=315.18)
+    DualBox (Right): (min_x=346.07, min_y=38.86, max_x=467.00, max_y=332.95)
+    PASS: No duplicate tiles found (305 unique tiles)
+  Test 29: Randomized Overlap Test (Angle: 278.0)
+    Ellipse Params: A=0.004281, B=0.000573, C=0.000286, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 8.01 degrees
+    Eccentricity: 0.976236
+    Stretch Factor: 1.85
+    Original SnugBox: (min_x=78.53, min_y=-178.79, max_x=197.56, max_y=282.10)
+    DualBox (Left): (min_x=78.53, min_y=-178.79, max_x=138.05, max_y=248.68)
+    DualBox (Right): (min_x=138.05, min_y=-145.36, max_x=197.56, max_y=282.10)
+    PASS: No duplicate tiles found (154 unique tiles)
+  Test 30: Randomized Overlap Test (Angle: 5.1)
+    Ellipse Params: A=0.000315, B=-0.001241, C=0.014192, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -84.93 degrees
+    Eccentricity: 0.992816
+    Stretch Factor: 1.81
+    Original SnugBox: (min_x=30.31, min_y=228.89, max_x=493.81, max_y=297.92)
+    DualBox (Left): (min_x=30.31, min_y=228.89, max_x=449.69, max_y=263.40)
+    DualBox (Right): (min_x=74.43, min_y=263.40, max_x=493.81, max_y=297.92)
+    PASS: No duplicate tiles found (137 unique tiles)
+  Test 31: Randomized Overlap Test (Angle: 262.4)
+    Ellipse Params: A=0.004023, B=-0.000525, C=0.000132, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -7.56 degrees
+    Eccentricity: 0.992411
+    Stretch Factor: 1.69
+    Original SnugBox: (min_x=155.90, min_y=-347.38, max_x=307.68, max_y=491.80)
+    DualBox (Left): (min_x=155.90, min_y=-347.38, max_x=231.79, max_y=362.42)
+    DualBox (Right): (min_x=231.79, min_y=-217.99, max_x=307.68, max_y=491.80)
+    PASS: No duplicate tiles found (295 unique tiles)
+  Test 32: Randomized Overlap Test (Angle: 333.5)
+    Ellipse Params: A=0.000338, B=0.000525, C=0.001127, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 63.47 degrees
+    Eccentricity: 0.972457
+    Stretch Factor: 1.52
+    Original SnugBox: (min_x=-260.40, min_y=135.58, max_x=429.92, max_y=513.39)
+    DualBox (Left): (min_x=-260.40, min_y=135.58, max_x=265.94, max_y=324.49)
+    DualBox (Right): (min_x=-96.42, min_y=324.49, max_x=429.92, max_y=513.39)
+    PASS: No duplicate tiles found (474 unique tiles)
+  Test 33: Randomized Overlap Test (Angle: 310.7)
+    Ellipse Params: A=0.003452, B=0.002903, C=0.002578, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 40.72 degrees
+    Eccentricity: 0.993319
+    Stretch Factor: 1.23
+    Original SnugBox: (min_x=-61.29, min_y=-135.56, max_x=430.96, max_y=434.10)
+    DualBox (Left): (min_x=-61.29, min_y=-135.56, max_x=184.84, max_y=214.84)
+    DualBox (Right): (min_x=184.84, min_y=83.70, max_x=430.96, max_y=434.10)
+    PASS: No duplicate tiles found (527 unique tiles)
+  Test 34: Randomized Overlap Test (Angle: 34.3)
+    Ellipse Params: A=0.000206, B=-0.000109, C=0.000291, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -55.65 degrees
+    Eccentricity: 0.799730
+    Stretch Factor: 1.90
+    Original SnugBox: (min_x=-115.42, min_y=32.93, max_x=402.00, max_y=468.37)
+    DualBox (Left): (min_x=-115.42, min_y=32.93, max_x=375.04, max_y=250.65)
+    DualBox (Right): (min_x=-88.45, min_y=250.65, max_x=402.00, max_y=468.37)
+    PASS: No duplicate tiles found (702 unique tiles)
+  Test 35: Randomized Overlap Test (Angle: 117.1)
+    Ellipse Params: A=0.002603, B=0.001296, C=0.000729, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 27.07 degrees
+    Eccentricity: 0.989821
+    Stretch Factor: 1.34
+    Original SnugBox: (min_x=34.04, min_y=-124.21, max_x=420.74, max_y=606.74)
+    DualBox (Left): (min_x=34.04, min_y=-124.21, max_x=227.39, max_y=364.60)
+    DualBox (Right): (min_x=227.39, min_y=117.93, max_x=420.74, max_y=606.74)
+    PASS: No duplicate tiles found (582 unique tiles)
+  Test 36: Randomized Overlap Test (Angle: 98.9)
+    Ellipse Params: A=0.007016, B=0.001085, C=0.000259, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 8.90 degrees
+    Eccentricity: 0.993803
+    Stretch Factor: 1.59
+    Original SnugBox: (min_x=124.64, min_y=-184.21, max_x=258.69, max_y=513.97)
+    DualBox (Left): (min_x=124.64, min_y=-184.21, max_x=191.66, max_y=371.87)
+    DualBox (Right): (min_x=191.66, min_y=-42.11, max_x=258.69, max_y=513.97)
+    PASS: No duplicate tiles found (276 unique tiles)
+  Test 37: Randomized Overlap Test (Angle: 43.1)
+    Ellipse Params: A=0.003045, B=-0.003187, C=0.003479, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -46.95 degrees
+    Eccentricity: 0.994725
+    Stretch Factor: 1.20
+    Original SnugBox: (min_x=8.19, min_y=0.85, max_x=601.16, max_y=555.63)
+    DualBox (Left): (min_x=8.19, min_y=0.85, max_x=365.00, max_y=278.24)
+    DualBox (Right): (min_x=244.35, min_y=278.24, max_x=601.16, max_y=555.63)
+    PASS: No duplicate tiles found (601 unique tiles)
+  Test 38: Randomized Overlap Test (Angle: 259.8)
+    Ellipse Params: A=0.006651, B=-0.001161, C=0.000393, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -10.18 degrees
+    Eccentricity: 0.986450
+    Stretch Factor: 1.70
+    Original SnugBox: (min_x=222.64, min_y=-114.44, max_x=339.94, max_y=368.08)
+    DualBox (Left): (min_x=222.64, min_y=-114.44, max_x=281.29, max_y=294.75)
+    DualBox (Right): (min_x=281.29, min_y=-41.11, max_x=339.94, max_y=368.08)
+    PASS: No duplicate tiles found (196 unique tiles)
+  Test 39: Randomized Overlap Test (Angle: 177.8)
+    Ellipse Params: A=0.000096, B=0.000004, C=0.000204, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 87.77 degrees
+    Eccentricity: 0.728545
+    Stretch Factor: 2.00
+    Original SnugBox: (min_x=-77.14, min_y=-55.16, max_x=603.53, max_y=411.69)
+    DualBox (Left): (min_x=-77.14, min_y=-55.16, max_x=603.38, max_y=178.26)
+    DualBox (Right): (min_x=-76.98, min_y=178.26, max_x=603.53, max_y=411.69)
+    PASS: No duplicate tiles found (780 unique tiles)
+  Test 40: Randomized Overlap Test (Angle: 39.9)
+    Ellipse Params: A=0.000149, B=-0.000042, C=0.000164, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -50.08 degrees
+    Eccentricity: 0.656855
+    Stretch Factor: 1.96
+    Original SnugBox: (min_x=-201.20, min_y=-159.62, max_x=365.94, max_y=380.65)
+    DualBox (Left): (min_x=-201.20, min_y=-159.62, max_x=355.32, max_y=110.52)
+    DualBox (Right): (min_x=-190.59, min_y=110.52, max_x=365.94, max_y=380.65)
+    PASS: No duplicate tiles found (552 unique tiles)
+  Test 41: Randomized Overlap Test (Angle: 11.3)
+    Ellipse Params: A=0.000320, B=-0.001211, C=0.006131, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -78.69 degrees
+    Eccentricity: 0.993907
+    Stretch Factor: 1.50
+    Original SnugBox: (min_x=-178.44, min_y=59.57, max_x=563.66, max_y=229.05)
+    DualBox (Left): (min_x=-178.44, min_y=59.57, max_x=378.78, max_y=144.31)
+    DualBox (Right): (min_x=6.45, min_y=144.31, max_x=563.66, max_y=229.05)
+    PASS: No duplicate tiles found (324 unique tiles)
+  Test 42: Randomized Overlap Test (Angle: 202.8)
+    Ellipse Params: A=0.000391, B=-0.000766, C=0.001893, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -67.22 degrees
+    Eccentricity: 0.984078
+    Stretch Factor: 1.46
+    Original SnugBox: (min_x=-45.70, min_y=-75.53, max_x=690.24, max_y=259.13)
+    DualBox (Left): (min_x=-45.70, min_y=-75.53, max_x=490.52, max_y=91.80)
+    DualBox (Right): (min_x=154.02, min_y=91.80, max_x=690.24, max_y=259.13)
+    PASS: No duplicate tiles found (411 unique tiles)
+  Test 43: Randomized Overlap Test (Angle: 89.7)
+    Ellipse Params: A=0.005065, B=-0.000022, C=0.000121, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -0.25 degrees
+    Eccentricity: 0.988018
+    Stretch Factor: 2.00
+    Original SnugBox: (min_x=165.16, min_y=-26.40, max_x=258.75, max_y=579.73)
+    DualBox (Left): (min_x=165.16, min_y=-26.40, max_x=211.95, max_y=579.61)
+    DualBox (Right): (min_x=211.95, min_y=-26.28, max_x=258.75, max_y=579.73)
+    PASS: No duplicate tiles found (210 unique tiles)
+  Test 44: Randomized Overlap Test (Angle: 73.1)
+    Ellipse Params: A=0.000437, B=-0.000118, C=0.000084, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -16.90 degrees
+    Eccentricity: 0.947806
+    Stretch Factor: 1.79
+    Original SnugBox: (min_x=-129.31, min_y=-232.08, max_x=275.50, max_y=691.40)
+    DualBox (Left): (min_x=-129.31, min_y=-232.08, max_x=73.09, max_y=593.11)
+    DualBox (Right): (min_x=73.09, min_y=-133.79, max_x=275.50, max_y=691.40)
+    PASS: No duplicate tiles found (540 unique tiles)
+  Test 45: Randomized Overlap Test (Angle: 104.3)
+    Ellipse Params: A=0.011406, B=0.002851, C=0.000956, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 14.31 degrees
+    Eccentricity: 0.990530
+    Stretch Factor: 1.50
+    Original SnugBox: (min_x=252.35, min_y=115.49, max_x=375.93, max_y=542.33)
+    DualBox (Left): (min_x=252.35, min_y=115.49, max_x=314.14, max_y=436.57)
+    DualBox (Right): (min_x=314.14, min_y=221.24, max_x=375.93, max_y=542.33)
+    PASS: No duplicate tiles found (175 unique tiles)
+  Test 46: Randomized Overlap Test (Angle: 224.8)
+    Ellipse Params: A=0.005467, B=-0.005352, C=0.005554, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: -45.23 degrees
+    Eccentricity: 0.992702
+    Stretch Factor: 1.24
+    Original SnugBox: (min_x=50.63, min_y=-106.25, max_x=429.41, max_y=269.55)
+    DualBox (Left): (min_x=50.63, min_y=-106.25, max_x=285.05, max_y=81.65)
+    DualBox (Right): (min_x=195.00, min_y=81.65, max_x=429.41, max_y=269.55)
+    PASS: No duplicate tiles found (264 unique tiles)
+  Test 47: Randomized Overlap Test (Angle: 313.7)
+    Ellipse Params: A=0.000847, B=0.000754, C=0.000780, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 43.73 degrees
+    Eccentricity: 0.981065
+    Stretch Factor: 1.37
+    Original SnugBox: (min_x=-190.54, min_y=-213.00, max_x=421.60, max_y=424.94)
+    DualBox (Left): (min_x=-190.54, min_y=-213.00, max_x=115.53, max_y=225.16)
+    DualBox (Right): (min_x=115.53, min_y=-13.22, max_x=421.60, max_y=424.94)
+    PASS: No duplicate tiles found (645 unique tiles)
+  Test 48: Randomized Overlap Test (Angle: 149.9)
+    Ellipse Params: A=0.001111, B=0.001830, C=0.003215, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 59.94 degrees
+    Eccentricity: 0.993868
+    Stretch Factor: 1.25
+    Original SnugBox: (min_x=-187.59, min_y=-87.51, max_x=611.20, max_y=382.12)
+    DualBox (Left): (min_x=-187.59, min_y=-87.51, max_x=311.66, max_y=147.30)
+    DualBox (Right): (min_x=111.94, min_y=147.30, max_x=611.20, max_y=382.12)
+    PASS: No duplicate tiles found (546 unique tiles)
+  Test 49: Randomized Overlap Test (Angle: 290.7)
+    Ellipse Params: A=0.000221, B=0.000064, C=0.000075, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 20.68 degrees
+    Eccentricity: 0.889295
+    Stretch Factor: 1.87
+    Original SnugBox: (min_x=-100.95, min_y=-295.85, max_x=414.73, max_y=586.65)
+    DualBox (Left): (min_x=-100.95, min_y=-295.85, max_x=156.89, max_y=528.54)
+    DualBox (Right): (min_x=156.89, min_y=-237.74, max_x=414.73, max_y=586.65)
+    PASS: No duplicate tiles found (780 unique tiles)
+  Test 50: Randomized Overlap Test (Angle: 326.5)
+    Ellipse Params: A=0.000338, B=0.000257, C=0.000555, opacity=1.000000
+    t (for exp(-0.5 Q(x)) = threshold): 11.082527
+    Computed Tilt Angle: 56.46 degrees
+    Eccentricity: 0.876779
+    Stretch Factor: 1.81
+    Original SnugBox: (min_x=-106.49, min_y=68.84, max_x=343.25, max_y=419.77)
+    DualBox (Left): (min_x=-106.49, min_y=68.84, max_x=299.47, max_y=244.31)
+    DualBox (Right): (min_x=-62.71, min_y=244.31, max_x=343.25, max_y=419.77)
+    PASS: No duplicate tiles found (473 unique tiles)
 No Duplicate Pairs Test: PASSED
 
-=== Test 2: Coverage Completeness ===
+=== Test 2: Coverage Completeness (Randomized) ===
 Requirements: 5.1, 5.2, 5.3, 5.4 - Complete ellipse coverage verification
-  Test 1: Angle 0.0°, Aspect 1.5
+  Test 1: Angle 41.4°, Aspect 8.0
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -90.00 degrees
-    Stretch Factor: 2.10
-    Original SnugBox: (min_x=-16.45, min_y=39.03, max_x=316.45, max_y=260.97)
-    DualBox (Left): (min_x=-16.45, min_y=39.03, max_x=333.10, max_y=150.00)
-    DualBox (Right): (min_x=-33.10, min_y=150.00, max_x=316.45, max_y=260.97)
-    PASS: Complete coverage (308 tiles)
-  Test 2: Angle 0.0°, Aspect 2.0
+    Ellipse Params: A=0.001253, B=-0.001371, C=0.001597, opacity=1.000000
+    Computed Tilt Angle: -48.58 degrees
+    Eccentricity: 0.992169
+    Stretch Factor: 1.25
+    Original SnugBox: (min_x=-248.70, min_y=-196.16, max_x=510.45, max_y=476.19)
+    DualBox (Left): (min_x=-248.70, min_y=-196.16, max_x=224.92, max_y=140.02)
+    DualBox (Right): (min_x=36.82, min_y=140.02, max_x=510.45, max_y=476.19)
+    PASS: Complete coverage (782 tiles)
+  Test 2: Angle 53.6°, Aspect 4.4
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -90.00 degrees
-    Stretch Factor: 2.10
-    Original SnugBox: (min_x=-16.45, min_y=66.77, max_x=316.45, max_y=233.23)
-    DualBox (Left): (min_x=-16.45, min_y=66.77, max_x=333.10, max_y=150.00)
-    DualBox (Right): (min_x=-33.10, min_y=150.00, max_x=316.45, max_y=233.23)
-    PASS: Complete coverage (226 tiles)
-  Test 3: Angle 0.0°, Aspect 3.0
+    Ellipse Params: A=0.001410, B=-0.000962, C=0.000818, opacity=1.000000
+    Computed Tilt Angle: -36.44 degrees
+    Eccentricity: 0.974356
+    Stretch Factor: 1.44
+    Original SnugBox: (min_x=-1.38, min_y=81.29, max_x=397.67, max_y=605.33)
+    DualBox (Left): (min_x=-1.38, min_y=81.29, max_x=198.14, max_y=459.74)
+    DualBox (Right): (min_x=198.14, min_y=226.88, max_x=397.67, max_y=605.33)
+    PASS: Complete coverage (609 tiles)
+  Test 3: Angle 309.3°, Aspect 2.1
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -90.00 degrees
-    Stretch Factor: 2.10
-    Original SnugBox: (min_x=-16.45, min_y=94.52, max_x=316.45, max_y=205.48)
-    DualBox (Left): (min_x=-16.45, min_y=94.52, max_x=333.10, max_y=150.00)
-    DualBox (Right): (min_x=-33.10, min_y=150.00, max_x=316.45, max_y=205.48)
-    PASS: Complete coverage (165 tiles)
-  Test 4: Angle 0.0°, Aspect 4.0
+    Ellipse Params: A=0.000125, B=0.000070, C=0.000097, opacity=1.000000
+    Computed Tilt Angle: 39.29 degrees
+    Eccentricity: 0.883978
+    Stretch Factor: 1.77
+    Original SnugBox: (min_x=-270.74, min_y=-174.23, max_x=497.77, max_y=698.93)
+    DualBox (Left): (min_x=-270.74, min_y=-174.23, max_x=113.52, max_y=600.08)
+    DualBox (Right): (min_x=113.52, min_y=-75.39, max_x=497.77, max_y=698.93)
+    PASS: Complete coverage (1266 tiles)
+  Test 4: Angle 220.4°, Aspect 1.5
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -90.00 degrees
-    Stretch Factor: 2.10
-    Original SnugBox: (min_x=-16.45, min_y=108.39, max_x=316.45, max_y=191.61)
-    DualBox (Left): (min_x=-16.45, min_y=108.39, max_x=333.10, max_y=150.00)
-    DualBox (Right): (min_x=-33.10, min_y=150.00, max_x=316.45, max_y=191.61)
-    PASS: Complete coverage (124 tiles)
-  Test 5: Angle 30.0°, Aspect 1.5
+    Ellipse Params: A=0.000069, B=-0.000028, C=0.000078, opacity=1.000000
+    Computed Tilt Angle: -49.63 degrees
+    Eccentricity: 0.746659
+    Stretch Factor: 1.92
+    Original SnugBox: (min_x=-115.07, min_y=-233.73, max_x=755.32, max_y=584.09)
+    DualBox (Left): (min_x=-115.07, min_y=-233.73, max_x=722.28, max_y=175.18)
+    DualBox (Right): (min_x=-82.04, min_y=175.18, max_x=755.32, max_y=584.09)
+    PASS: Complete coverage (1480 tiles)
+  Test 5: Angle 142.2°, Aspect 3.1
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -60.00 degrees
+    Ellipse Params: A=0.000142, B=0.000141, C=0.000214, opacity=1.000000
+    Computed Tilt Angle: 52.18 degrees
+    Eccentricity: 0.948218
+    Stretch Factor: 1.59
+    Original SnugBox: (min_x=-371.30, min_y=-210.20, max_x=578.08, max_y=562.86)
+    DualBox (Left): (min_x=-371.30, min_y=-210.20, max_x=383.10, max_y=176.33)
+    DualBox (Right): (min_x=-176.33, min_y=176.33, max_x=578.08, max_y=562.86)
+    PASS: Complete coverage (1189 tiles)
+  Test 6: Angle 168.5°, Aspect 1.9
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000029, B=0.000013, C=0.000092, opacity=1.000000
+    Computed Tilt Angle: 78.52 degrees
+    Eccentricity: 0.848681
+    Stretch Factor: 1.97
+    Original SnugBox: (min_x=-277.69, min_y=-92.48, max_x=997.68, max_y=625.94)
+    DualBox (Left): (min_x=-277.69, min_y=-92.48, max_x=976.31, max_y=266.73)
+    DualBox (Right): (min_x=-256.32, min_y=266.73, max_x=997.68, max_y=625.94)
+    PASS: Complete coverage (1600 tiles)
+  Test 7: Angle 79.6°, Aspect 10.1
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.006293, B=-0.001147, C=0.000274, opacity=1.000000
+    Computed Tilt Angle: -10.43 degrees
+    Eccentricity: 0.995117
+    Stretch Factor: 1.49
+    Original SnugBox: (min_x=188.36, min_y=-216.54, max_x=360.17, max_y=606.19)
+    DualBox (Left): (min_x=188.36, min_y=-216.54, max_x=274.26, max_y=395.79)
+    DualBox (Right): (min_x=274.26, min_y=-6.13, max_x=360.17, max_y=606.19)
+    PASS: Complete coverage (378 tiles)
+  Test 8: Angle 60.8°, Aspect 2.2
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000236, B=-0.000097, C=0.000116, opacity=1.000000
+    Computed Tilt Angle: -29.20 degrees
+    Eccentricity: 0.887003
+    Stretch Factor: 1.81
+    Original SnugBox: (min_x=85.44, min_y=-85.20, max_x=620.50, max_y=677.00)
+    DualBox (Left): (min_x=85.44, min_y=-85.20, max_x=352.97, max_y=604.35)
+    DualBox (Right): (min_x=352.97, min_y=-12.54, max_x=620.50, max_y=677.00)
+    PASS: Complete coverage (1326 tiles)
+  Test 9: Angle 305.6°, Aspect 9.7
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.001629, B=0.001148, C=0.000849, opacity=1.000000
+    Computed Tilt Angle: 35.62 degrees
+    Eccentricity: 0.994700
+    Stretch Factor: 1.21
+    Original SnugBox: (min_x=-163.61, min_y=-317.42, max_x=605.87, max_y=748.65)
+    DualBox (Left): (min_x=-163.61, min_y=-317.42, max_x=221.13, max_y=329.89)
+    DualBox (Right): (min_x=221.13, min_y=101.33, max_x=605.87, max_y=748.65)
+    PASS: Complete coverage (1129 tiles)
+  Test 10: Angle 314.6°, Aspect 14.4
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.005051, B=0.004926, C=0.004899, opacity=1.000000
+    Computed Tilt Angle: 44.56 degrees
+    Eccentricity: 0.997575
+    Stretch Factor: 1.14
+    Original SnugBox: (min_x=-104.35, min_y=-114.63, max_x=571.80, max_y=571.98)
+    DualBox (Left): (min_x=-104.35, min_y=-114.63, max_x=233.73, max_y=276.24)
+    DualBox (Right): (min_x=233.73, min_y=181.11, max_x=571.80, max_y=571.98)
+    PASS: Complete coverage (813 tiles)
+  Test 11: Angle 241.1°, Aspect 3.0
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.001006, B=-0.000480, C=0.000402, opacity=1.000000
+    Computed Tilt Angle: -28.90 degrees
+    Eccentricity: 0.944413
+    Stretch Factor: 1.66
+    Original SnugBox: (min_x=9.32, min_y=116.43, max_x=328.82, max_y=621.83)
+    DualBox (Left): (min_x=9.32, min_y=116.43, max_x=169.07, max_y=535.13)
+    DualBox (Right): (min_x=169.07, min_y=203.13, max_x=328.82, max_y=621.83)
+    PASS: Complete coverage (572 tiles)
+  Test 12: Angle 71.0°, Aspect 5.2
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000807, B=-0.000267, C=0.000125, opacity=1.000000
+    Computed Tilt Angle: -19.03 degrees
+    Eccentricity: 0.981637
+    Stretch Factor: 1.54
+    Original SnugBox: (min_x=-38.12, min_y=-351.65, max_x=395.51, max_y=751.05)
+    DualBox (Left): (min_x=-38.12, min_y=-351.65, max_x=178.69, max_y=497.67)
+    DualBox (Right): (min_x=178.69, min_y=-98.27, max_x=395.51, max_y=751.05)
+    PASS: Complete coverage (912 tiles)
+  Test 13: Angle 1.8°, Aspect 7.0
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000051, B=-0.000075, C=0.002365, opacity=1.000000
+    Computed Tilt Angle: -88.15 degrees
+    Eccentricity: 0.989604
+    Stretch Factor: 1.98
+    Original SnugBox: (min_x=-242.03, min_y=172.60, max_x=708.93, max_y=312.76)
+    DualBox (Left): (min_x=-242.03, min_y=172.60, max_x=697.89, max_y=242.68)
+    DualBox (Right): (min_x=-230.99, min_y=242.68, max_x=708.93, max_y=312.76)
+    PASS: Complete coverage (400 tiles)
+  Test 14: Angle 296.9°, Aspect 9.9
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.008676, B=0.004349, C=0.002318, opacity=1.000000
+    Computed Tilt Angle: 26.92 degrees
+    Eccentricity: 0.994932
+    Stretch Factor: 1.24
+    Original SnugBox: (min_x=247.00, min_y=-64.34, max_x=539.92, max_y=502.36)
+    DualBox (Left): (min_x=247.00, min_y=-64.34, max_x=393.46, max_y=288.15)
+    DualBox (Right): (min_x=393.46, min_y=149.86, max_x=539.92, max_y=502.36)
+    PASS: Complete coverage (410 tiles)
+  Test 15: Angle 327.1°, Aspect 13.3
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.001473, B=0.002234, C=0.003484, opacity=1.000000
+    Computed Tilt Angle: 57.12 degrees
+    Eccentricity: 0.997149
+    Stretch Factor: 1.16
+    Original SnugBox: (min_x=-139.34, min_y=-85.91, max_x=917.40, max_y=601.06)
+    DualBox (Left): (min_x=-139.34, min_y=-85.91, max_x=475.78, max_y=257.58)
+    DualBox (Right): (min_x=302.27, min_y=257.58, max_x=917.40, max_y=601.06)
+    PASS: Complete coverage (982 tiles)
+  Test 16: Angle 286.2°, Aspect 2.5
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000750, B=0.000183, C=0.000177, opacity=1.000000
+    Computed Tilt Angle: 16.24 degrees
+    Eccentricity: 0.919626
+    Stretch Factor: 1.87
+    Original SnugBox: (min_x=13.90, min_y=92.36, max_x=294.65, max_y=670.18)
+    DualBox (Left): (min_x=13.90, min_y=92.36, max_x=154.27, max_y=631.38)
+    DualBox (Right): (min_x=154.27, min_y=131.15, max_x=294.65, max_y=670.18)
+    PASS: Complete coverage (638 tiles)
+  Test 17: Angle 343.1°, Aspect 3.2
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000112, B=0.000164, C=0.000603, opacity=1.000000
+    Computed Tilt Angle: 73.09 degrees
+    Eccentricity: 0.950963
+    Stretch Factor: 1.78
+    Original SnugBox: (min_x=-162.80, min_y=184.79, max_x=646.56, max_y=534.22)
+    DualBox (Left): (min_x=-162.80, min_y=184.79, max_x=555.81, max_y=359.51)
+    DualBox (Right): (min_x=-72.05, min_y=359.51, max_x=646.56, max_y=534.22)
+    PASS: Complete coverage (865 tiles)
+  Test 18: Angle 219.2°, Aspect 10.4
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.003788, B=-0.004534, C=0.005637, opacity=1.000000
+    Computed Tilt Angle: -50.76 degrees
+    Eccentricity: 0.995405
+    Stretch Factor: 1.19
+    Original SnugBox: (min_x=9.15, min_y=147.47, max_x=568.12, max_y=605.72)
+    DualBox (Left): (min_x=9.15, min_y=147.47, max_x=342.72, max_y=376.59)
+    DualBox (Right): (min_x=234.55, min_y=376.59, max_x=568.12, max_y=605.72)
+    PASS: Complete coverage (652 tiles)
+  Test 19: Angle 99.2°, Aspect 14.1
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.005503, B=0.000887, C=0.000172, opacity=1.000000
+    Computed Tilt Angle: 9.20 degrees
+    Eccentricity: 0.997467
+    Stretch Factor: 1.41
+    Original SnugBox: (min_x=31.67, min_y=-452.80, max_x=249.22, max_y=776.94)
+    DualBox (Left): (min_x=31.67, min_y=-452.80, max_x=140.45, max_y=415.75)
+    DualBox (Right): (min_x=140.45, min_y=-91.62, max_x=249.22, max_y=776.94)
+    PASS: Complete coverage (502 tiles)
+  Test 20: Angle 289.6°, Aspect 6.7
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.001118, B=0.000389, C=0.000166, opacity=1.000000
+    Computed Tilt Angle: 19.62 degrees
+    Eccentricity: 0.988870
+    Stretch Factor: 1.43
+    Original SnugBox: (min_x=168.37, min_y=-335.66, max_x=627.78, max_y=855.12)
+    DualBox (Left): (min_x=168.37, min_y=-335.66, max_x=398.07, max_y=517.80)
+    DualBox (Right): (min_x=398.07, min_y=1.66, max_x=627.78, max_y=855.12)
+    PASS: Complete coverage (1102 tiles)
+  Test 21: Angle 264.9°, Aspect 5.4
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.001683, B=-0.000146, C=0.000072, opacity=1.000000
+    Computed Tilt Angle: -5.14 degrees
+    Eccentricity: 0.982578
+    Stretch Factor: 1.91
+    Original SnugBox: (min_x=192.02, min_y=-165.00, max_x=370.88, max_y=701.39)
+    DualBox (Left): (min_x=192.02, min_y=-165.00, max_x=281.45, max_y=661.25)
+    DualBox (Right): (min_x=281.45, min_y=-124.85, max_x=370.88, max_y=701.39)
+    PASS: Complete coverage (480 tiles)
+  Test 22: Angle 279.4°, Aspect 6.8
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.003061, B=0.000494, C=0.000149, opacity=1.000000
+    Computed Tilt Angle: 9.37 degrees
+    Eccentricity: 0.989180
+    Stretch Factor: 1.68
+    Original SnugBox: (min_x=229.93, min_y=-129.94, max_x=406.26, max_y=669.07)
+    DualBox (Left): (min_x=229.93, min_y=-129.94, max_x=318.10, max_y=542.22)
+    DualBox (Right): (min_x=318.10, min_y=-3.08, max_x=406.26, max_y=669.07)
+    PASS: Complete coverage (450 tiles)
+  Test 23: Angle 143.7°, Aspect 1.8
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000071, B=0.000043, C=0.000098, opacity=1.000000
+    Computed Tilt Angle: 53.71 degrees
+    Eccentricity: 0.832508
+    Stretch Factor: 1.86
+    Original SnugBox: (min_x=-228.97, min_y=-80.46, max_x=690.89, max_y=703.29)
+    DualBox (Left): (min_x=-228.97, min_y=-80.46, max_x=625.91, max_y=311.41)
+    DualBox (Right): (min_x=-163.98, min_y=311.41, max_x=690.89, max_y=703.29)
+    PASS: Complete coverage (1600 tiles)
+  Test 24: Angle 279.3°, Aspect 9.6
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.015851, B=0.002570, C=0.000599, opacity=1.000000
+    Computed Tilt Angle: 9.31 degrees
+    Eccentricity: 0.994529
     Stretch Factor: 1.55
-    Original SnugBox: (min_x=-4.46, min_y=22.87, max_x=304.46, max_y=277.13)
-    DualBox (Left): (min_x=-4.46, min_y=22.87, max_x=234.95, max_y=150.00)
-    DualBox (Right): (min_x=65.05, min_y=150.00, max_x=304.46, max_y=277.13)
-    PASS: Complete coverage (268 tiles)
-  Test 6: Angle 30.0°, Aspect 2.0
+    Original SnugBox: (min_x=214.08, min_y=100.67, max_x=309.94, max_y=593.82)
+    DualBox (Left): (min_x=214.08, min_y=100.67, max_x=262.01, max_y=483.28)
+    DualBox (Right): (min_x=262.01, min_y=211.22, max_x=309.94, max_y=593.82)
+    PASS: Complete coverage (182 tiles)
+  Test 25: Angle 74.2°, Aspect 12.4
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -60.00 degrees
-    Stretch Factor: 1.55
-    Original SnugBox: (min_x=-0.04, min_y=39.90, max_x=300.04, max_y=260.10)
-    DualBox (Left): (min_x=-0.04, min_y=39.90, max_x=232.52, max_y=150.00)
-    DualBox (Right): (min_x=67.48, min_y=150.00, max_x=300.04, max_y=260.10)
-    PASS: Complete coverage (229 tiles)
-  Test 7: Angle 30.0°, Aspect 3.0
+    Ellipse Params: A=0.014229, B=-0.004001, C=0.001233, opacity=1.000000
+    Computed Tilt Angle: -15.81 degrees
+    Eccentricity: 0.996733
+    Stretch Factor: 1.30
+    Original SnugBox: (min_x=275.01, min_y=18.66, max_x=463.45, max_y=658.78)
+    DualBox (Left): (min_x=275.01, min_y=18.66, max_x=369.23, max_y=433.52)
+    DualBox (Right): (min_x=369.23, min_y=243.92, max_x=463.45, max_y=658.78)
+    PASS: Complete coverage (326 tiles)
+  Test 26: Angle 186.1°, Aspect 5.1
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -60.00 degrees
-    Stretch Factor: 1.55
-    Original SnugBox: (min_x=3.20, min_y=53.90, max_x=296.80, max_y=246.10)
-    DualBox (Left): (min_x=3.20, min_y=53.90, max_x=230.74, max_y=150.00)
-    DualBox (Right): (min_x=69.26, min_y=150.00, max_x=296.80, max_y=246.10)
-    PASS: Complete coverage (199 tiles)
-  Test 8: Angle 30.0°, Aspect 4.0
+    Ellipse Params: A=0.000042, B=-0.000088, C=0.000856, opacity=1.000000
+    Computed Tilt Angle: -83.91 degrees
+    Eccentricity: 0.980859
+    Stretch Factor: 1.89
+    Original SnugBox: (min_x=-281.11, min_y=92.62, max_x=874.69, max_y=349.16)
+    DualBox (Left): (min_x=-281.11, min_y=92.62, max_x=809.31, max_y=220.89)
+    DualBox (Right): (min_x=-215.73, min_y=220.89, max_x=874.69, max_y=349.16)
+    PASS: Complete coverage (680 tiles)
+  Test 27: Angle 107.9°, Aspect 13.9
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -60.00 degrees
-    Stretch Factor: 1.55
-    Original SnugBox: (min_x=4.35, min_y=59.31, max_x=295.65, max_y=240.69)
-    DualBox (Left): (min_x=4.35, min_y=59.31, max_x=230.11, max_y=150.00)
-    DualBox (Right): (min_x=69.89, min_y=150.00, max_x=295.65, max_y=240.69)
-    PASS: Complete coverage (199 tiles)
-  Test 9: Angle 45.0°, Aspect 1.5
+    Ellipse Params: A=0.020167, B=0.006462, C=0.002198, opacity=1.000000
+    Computed Tilt Angle: 17.86 degrees
+    Eccentricity: 0.997402
+    Stretch Factor: 1.24
+    Original SnugBox: (min_x=211.74, min_y=-73.76, max_x=406.48, max_y=516.13)
+    DualBox (Left): (min_x=211.74, min_y=-73.76, max_x=309.11, max_y=292.20)
+    DualBox (Right): (min_x=309.11, min_y=150.18, max_x=406.48, max_y=516.13)
+    PASS: Complete coverage (291 tiles)
+  Test 28: Angle 18.9°, Aspect 5.4
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -45.00 degrees
-    Stretch Factor: 1.00
-    Original SnugBox: (min_x=8.54, min_y=8.54, max_x=291.46, max_y=291.46)
-    DualBox (Left): (min_x=8.54, min_y=8.54, max_x=150.00, max_y=150.00)
-    DualBox (Right): (min_x=150.00, min_y=150.00, max_x=291.46, max_y=291.46)
-    PASS: Complete coverage (199 tiles)
-  Test 10: Angle 45.0°, Aspect 2.0
+    Ellipse Params: A=0.000104, B=-0.000228, C=0.000692, opacity=1.000000
+    Computed Tilt Angle: -71.07 degrees
+    Eccentricity: 0.982786
+    Stretch Factor: 1.53
+    Original SnugBox: (min_x=-442.56, min_y=84.20, max_x=788.60, max_y=562.76)
+    DualBox (Left): (min_x=-442.56, min_y=84.20, max_x=498.69, max_y=323.48)
+    DualBox (Right): (min_x=-152.65, min_y=323.48, max_x=788.60, max_y=562.76)
+    PASS: Complete coverage (1120 tiles)
+  Test 29: Angle 211.7°, Aspect 7.1
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -45.00 degrees
-    Stretch Factor: 1.00
-    Original SnugBox: (min_x=18.41, min_y=18.41, max_x=281.59, max_y=281.59)
-    DualBox (Left): (min_x=18.41, min_y=18.41, max_x=150.00, max_y=150.00)
-    DualBox (Right): (min_x=150.00, min_y=150.00, max_x=281.59, max_y=281.59)
-    PASS: Complete coverage (161 tiles)
-  Test 11: Angle 45.0°, Aspect 3.0
+    Ellipse Params: A=0.001320, B=-0.001991, C=0.003312, opacity=1.000000
+    Computed Tilt Angle: -58.28 degrees
+    Eccentricity: 0.990093
+    Stretch Factor: 1.31
+    Original SnugBox: (min_x=97.50, min_y=134.68, max_x=698.22, max_y=513.98)
+    DualBox (Left): (min_x=97.50, min_y=134.68, max_x=489.48, max_y=324.33)
+    DualBox (Right): (min_x=306.24, min_y=324.33, max_x=698.22, max_y=513.98)
+    PASS: Complete coverage (586 tiles)
+  Test 30: Angle 208.8°, Aspect 11.1
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -45.00 degrees
-    Stretch Factor: 1.00
-    Original SnugBox: (min_x=25.93, min_y=25.93, max_x=274.07, max_y=274.07)
-    DualBox (Left): (min_x=25.93, min_y=25.93, max_x=150.00, max_y=150.00)
-    DualBox (Right): (min_x=150.00, min_y=150.00, max_x=274.07, max_y=274.07)
-    PASS: Complete coverage (161 tiles)
-  Test 12: Angle 45.0°, Aspect 4.0
+    Ellipse Params: A=0.000835, B=-0.001467, C=0.002696, opacity=1.000000
+    Computed Tilt Angle: -61.20 degrees
+    Eccentricity: 0.995941
+    Stretch Factor: 1.21
+    Original SnugBox: (min_x=-239.72, min_y=73.90, max_x=856.88, max_y=684.11)
+    DualBox (Left): (min_x=-239.72, min_y=73.90, max_x=423.80, max_y=379.01)
+    DualBox (Right): (min_x=193.36, min_y=379.01, max_x=856.88, max_y=684.11)
+    PASS: Complete coverage (1001 tiles)
+  Test 31: Angle 37.0°, Aspect 5.4
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -45.00 degrees
-    Stretch Factor: 1.00
-    Original SnugBox: (min_x=28.68, min_y=28.68, max_x=271.32, max_y=271.32)
-    DualBox (Left): (min_x=28.68, min_y=28.68, max_x=150.00, max_y=150.00)
-    DualBox (Right): (min_x=150.00, min_y=150.00, max_x=271.32, max_y=271.32)
-    PASS: Complete coverage (144 tiles)
-  Test 13: Angle 60.0°, Aspect 1.5
+    Ellipse Params: A=0.000299, B=-0.000362, C=0.000507, opacity=1.000000
+    Computed Tilt Angle: -53.01 degrees
+    Eccentricity: 0.982627
+    Stretch Factor: 1.37
+    Original SnugBox: (min_x=-191.49, min_y=-147.02, max_x=844.67, max_y=649.03)
+    DualBox (Left): (min_x=-191.49, min_y=-147.02, max_x=518.99, max_y=251.00)
+    DualBox (Right): (min_x=134.19, min_y=251.00, max_x=844.67, max_y=649.03)
+    PASS: Complete coverage (1303 tiles)
+  Test 32: Angle 338.1°, Aspect 13.6
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -30.00 degrees
-    Stretch Factor: 1.55
-    Original SnugBox: (min_x=22.87, min_y=-4.46, max_x=277.13, max_y=304.46)
-    DualBox (Left): (min_x=22.87, min_y=-4.46, max_x=150.00, max_y=234.95)
-    DualBox (Right): (min_x=150.00, min_y=65.05, max_x=277.13, max_y=304.46)
-    PASS: Complete coverage (268 tiles)
-  Test 14: Angle 60.0°, Aspect 2.0
+    Ellipse Params: A=0.003164, B=0.007583, C=0.019002, opacity=1.000000
+    Computed Tilt Angle: 68.12 degrees
+    Eccentricity: 0.997295
+    Stretch Factor: 1.21
+    Original SnugBox: (min_x=-123.61, min_y=259.10, max_x=442.76, max_y=490.23)
+    DualBox (Left): (min_x=-123.61, min_y=259.10, max_x=218.75, max_y=374.66)
+    DualBox (Right): (min_x=100.39, min_y=374.66, max_x=442.76, max_y=490.23)
+    PASS: Complete coverage (280 tiles)
+  Test 33: Angle 214.0°, Aspect 4.8
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -30.00 degrees
-    Stretch Factor: 1.55
-    Original SnugBox: (min_x=39.90, min_y=-0.04, max_x=260.10, max_y=300.04)
-    DualBox (Left): (min_x=39.90, min_y=-0.04, max_x=150.00, max_y=232.52)
-    DualBox (Right): (min_x=150.00, min_y=67.48, max_x=260.10, max_y=300.04)
-    PASS: Complete coverage (229 tiles)
-  Test 15: Angle 60.0°, Aspect 3.0
+    Ellipse Params: A=0.000206, B=-0.000267, C=0.000422, opacity=1.000000
+    Computed Tilt Angle: -56.00 degrees
+    Eccentricity: 0.978062
+    Stretch Factor: 1.43
+    Original SnugBox: (min_x=-318.01, min_y=18.35, max_x=772.67, max_y=780.87)
+    DualBox (Left): (min_x=-318.01, min_y=18.35, max_x=459.18, max_y=399.61)
+    DualBox (Right): (min_x=-4.53, min_y=399.61, max_x=772.67, max_y=780.87)
+    PASS: Complete coverage (1307 tiles)
+  Test 34: Angle 187.9°, Aspect 1.4
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -30.00 degrees
-    Stretch Factor: 1.55
-    Original SnugBox: (min_x=53.90, min_y=3.20, max_x=246.10, max_y=296.80)
-    DualBox (Left): (min_x=53.90, min_y=3.20, max_x=150.00, max_y=230.74)
-    DualBox (Right): (min_x=150.00, min_y=69.26, max_x=246.10, max_y=296.80)
-    PASS: Complete coverage (199 tiles)
-  Test 16: Angle 60.0°, Aspect 4.0
+    Ellipse Params: A=0.000028, B=-0.000004, C=0.000056, opacity=1.000000
+    Computed Tilt Angle: -82.14 degrees
+    Eccentricity: 0.717648
+    Stretch Factor: 2.00
+    Original SnugBox: (min_x=-390.78, min_y=-80.32, max_x=879.56, max_y=817.43)
+    DualBox (Left): (min_x=-390.78, min_y=-80.32, max_x=876.39, max_y=368.56)
+    DualBox (Right): (min_x=-387.61, min_y=368.56, max_x=879.56, max_y=817.43)
+    PASS: Complete coverage (1600 tiles)
+  Test 35: Angle 104.9°, Aspect 5.2
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -30.00 degrees
-    Stretch Factor: 1.55
-    Original SnugBox: (min_x=59.31, min_y=4.35, max_x=240.69, max_y=295.65)
-    DualBox (Left): (min_x=59.31, min_y=4.35, max_x=150.00, max_y=230.11)
-    DualBox (Right): (min_x=150.00, min_y=69.89, max_x=240.69, max_y=295.65)
-    PASS: Complete coverage (199 tiles)
-  Test 17: Angle 90.0°, Aspect 1.5
+    Ellipse Params: A=0.003691, B=0.000944, C=0.000397, opacity=1.000000
+    Computed Tilt Angle: 14.91 degrees
+    Eccentricity: 0.981403
+    Stretch Factor: 1.63
+    Original SnugBox: (min_x=284.31, min_y=3.65, max_x=459.54, max_y=538.13)
+    DualBox (Left): (min_x=284.31, min_y=3.65, max_x=371.93, max_y=438.02)
+    DualBox (Right): (min_x=371.93, min_y=103.76, max_x=459.54, max_y=538.13)
+    PASS: Complete coverage (342 tiles)
+  Test 36: Angle 230.2°, Aspect 1.2
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: 0.00 degrees
-    Stretch Factor: 2.10
-    Original SnugBox: (min_x=39.03, min_y=-16.45, max_x=260.97, max_y=316.45)
-    DualBox (Left): (min_x=39.03, min_y=-16.45, max_x=150.00, max_y=333.10)
-    DualBox (Right): (min_x=150.00, min_y=-33.10, max_x=260.97, max_y=316.45)
-    PASS: Complete coverage (308 tiles)
-  Test 18: Angle 90.0°, Aspect 2.0
+    Ellipse Params: A=0.000034, B=-0.000005, C=0.000032, opacity=1.000000
+    Computed Tilt Angle: -39.78 degrees
+    Eccentricity: 0.519910
+    Stretch Factor: 1.99
+    Original SnugBox: (min_x=-297.63, min_y=-418.87, max_x=864.40, max_y=776.56)
+    DualBox (Left): (min_x=-297.63, min_y=-418.87, max_x=283.38, max_y=769.46)
+    DualBox (Right): (min_x=283.38, min_y=-411.76, max_x=864.40, max_y=776.56)
+    PASS: Complete coverage (1600 tiles)
+  Test 37: Angle 313.3°, Aspect 12.2
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: 0.00 degrees
-    Stretch Factor: 2.10
-    Original SnugBox: (min_x=66.77, min_y=-16.45, max_x=233.23, max_y=316.45)
-    DualBox (Left): (min_x=66.77, min_y=-16.45, max_x=150.00, max_y=333.10)
-    DualBox (Right): (min_x=150.00, min_y=-33.10, max_x=233.23, max_y=316.45)
-    PASS: Complete coverage (226 tiles)
-  Test 19: Angle 90.0°, Aspect 3.0
+    Ellipse Params: A=0.002291, B=0.002129, C=0.002033, opacity=1.000000
+    Computed Tilt Angle: 43.27 degrees
+    Eccentricity: 0.996610
+    Stretch Factor: 1.16
+    Original SnugBox: (min_x=-298.87, min_y=-64.61, max_x=550.63, max_y=837.21)
+    DualBox (Left): (min_x=-298.87, min_y=-64.61, max_x=125.88, max_y=460.13)
+    DualBox (Right): (min_x=125.88, min_y=312.47, max_x=550.63, max_y=837.21)
+    PASS: Complete coverage (810 tiles)
+  Test 38: Angle 295.5°, Aspect 11.4
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: 0.00 degrees
-    Stretch Factor: 2.10
-    Original SnugBox: (min_x=94.52, min_y=-16.45, max_x=205.48, max_y=316.45)
-    DualBox (Left): (min_x=94.52, min_y=-16.45, max_x=150.00, max_y=333.10)
-    DualBox (Right): (min_x=150.00, min_y=-33.10, max_x=205.48, max_y=316.45)
-    PASS: Complete coverage (165 tiles)
-  Test 20: Angle 90.0°, Aspect 4.0
+    Ellipse Params: A=0.002919, B=0.001376, C=0.000683, opacity=1.000000
+    Computed Tilt Angle: 25.45 degrees
+    Eccentricity: 0.996134
+    Stretch Factor: 1.22
+    Original SnugBox: (min_x=-121.65, min_y=-324.59, max_x=432.48, max_y=821.23)
+    DualBox (Left): (min_x=-121.65, min_y=-324.59, max_x=155.41, max_y=375.73)
+    DualBox (Right): (min_x=155.41, min_y=120.90, max_x=432.48, max_y=821.23)
+    PASS: Complete coverage (850 tiles)
+  Test 39: Angle 156.5°, Aspect 10.4
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: 0.00 degrees
-    Stretch Factor: 2.10
-    Original SnugBox: (min_x=108.39, min_y=-16.45, max_x=191.61, max_y=316.45)
-    DualBox (Left): (min_x=108.39, min_y=-16.45, max_x=150.00, max_y=333.10)
-    DualBox (Right): (min_x=150.00, min_y=-33.10, max_x=191.61, max_y=316.45)
-    PASS: Complete coverage (124 tiles)
-  Test 21: Angle 120.0°, Aspect 1.5
+    Ellipse Params: A=0.000521, B=0.001131, C=0.002627, opacity=1.000000
+    Computed Tilt Angle: 66.48 degrees
+    Eccentricity: 0.995342
+    Stretch Factor: 1.26
+    Original SnugBox: (min_x=-308.84, min_y=-76.18, max_x=826.11, max_y=429.21)
+    DualBox (Left): (min_x=-308.84, min_y=-76.18, max_x=404.49, max_y=176.51)
+    DualBox (Right): (min_x=112.78, min_y=176.51, max_x=826.11, max_y=429.21)
+    PASS: Complete coverage (821 tiles)
+  Test 40: Angle 101.3°, Aspect 7.3
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: 30.00 degrees
-    Stretch Factor: 1.55
-    Original SnugBox: (min_x=22.87, min_y=-4.46, max_x=277.13, max_y=304.46)
-    DualBox (Left): (min_x=22.87, min_y=-4.46, max_x=150.00, max_y=234.95)
-    DualBox (Right): (min_x=150.00, min_y=65.05, max_x=277.13, max_y=304.46)
-    PASS: Complete coverage (268 tiles)
-  Test 22: Angle 120.0°, Aspect 2.0
+    Ellipse Params: A=0.001982, B=0.000388, C=0.000117, opacity=1.000000
+    Computed Tilt Angle: 11.30 degrees
+    Eccentricity: 0.990474
+    Stretch Factor: 1.59
+    Original SnugBox: (min_x=158.32, min_y=-358.39, max_x=411.84, max_y=686.71)
+    DualBox (Left): (min_x=158.32, min_y=-358.39, max_x=285.08, max_y=472.41)
+    DualBox (Right): (min_x=285.08, min_y=-144.09, max_x=411.84, max_y=686.71)
+    PASS: Complete coverage (600 tiles)
+  Test 41: Angle 37.2°, Aspect 3.8
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: 30.00 degrees
-    Stretch Factor: 1.55
-    Original SnugBox: (min_x=39.90, min_y=-0.04, max_x=260.10, max_y=300.04)
-    DualBox (Left): (min_x=39.90, min_y=-0.04, max_x=150.00, max_y=232.52)
-    DualBox (Right): (min_x=150.00, min_y=67.48, max_x=260.10, max_y=300.04)
-    PASS: Complete coverage (229 tiles)
-  Test 23: Angle 120.0°, Aspect 3.0
+    Ellipse Params: A=0.000316, B=-0.000346, C=0.000509, opacity=1.000000
+    Computed Tilt Angle: -52.79 degrees
+    Eccentricity: 0.964467
+    Stretch Factor: 1.51
+    Original SnugBox: (min_x=-214.63, min_y=-177.03, max_x=522.35, max_y=403.85)
+    DualBox (Left): (min_x=-214.63, min_y=-177.03, max_x=341.05, max_y=113.41)
+    DualBox (Right): (min_x=-33.33, min_y=113.41, max_x=522.35, max_y=403.85)
+    PASS: Complete coverage (781 tiles)
+  Test 42: Angle 117.5°, Aspect 5.4
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: 30.00 degrees
-    Stretch Factor: 1.55
-    Original SnugBox: (min_x=53.90, min_y=3.20, max_x=246.10, max_y=296.80)
-    DualBox (Left): (min_x=53.90, min_y=3.20, max_x=150.00, max_y=230.74)
-    DualBox (Right): (min_x=150.00, min_y=69.26, max_x=246.10, max_y=296.80)
-    PASS: Complete coverage (199 tiles)
-  Test 24: Angle 120.0°, Aspect 4.0
+    Ellipse Params: A=0.000654, B=0.000327, C=0.000198, opacity=1.000000
+    Computed Tilt Angle: 27.55 degrees
+    Eccentricity: 0.982906
+    Stretch Factor: 1.42
+    Original SnugBox: (min_x=16.80, min_y=-439.85, max_x=634.42, max_y=681.78)
+    DualBox (Left): (min_x=16.80, min_y=-439.85, max_x=325.61, max_y=357.31)
+    DualBox (Right): (min_x=325.61, min_y=-115.38, max_x=634.42, max_y=681.78)
+    PASS: Complete coverage (1237 tiles)
+  Test 43: Angle 257.6°, Aspect 11.9
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: 30.00 degrees
-    Stretch Factor: 1.55
-    Original SnugBox: (min_x=59.31, min_y=4.35, max_x=240.69, max_y=295.65)
-    DualBox (Left): (min_x=59.31, min_y=4.35, max_x=150.00, max_y=230.11)
-    DualBox (Right): (min_x=150.00, min_y=69.89, max_x=240.69, max_y=295.65)
-    PASS: Complete coverage (199 tiles)
-  Test 25: Angle 135.0°, Aspect 1.5
+    Ellipse Params: A=0.003663, B=-0.000801, C=0.000203, opacity=1.000000
+    Computed Tilt Angle: -12.42 degrees
+    Eccentricity: 0.996487
+    Stretch Factor: 1.37
+    Original SnugBox: (min_x=68.19, min_y=-293.51, max_x=363.41, max_y=959.65)
+    DualBox (Left): (min_x=68.19, min_y=-293.51, max_x=215.80, max_y=566.55)
+    DualBox (Right): (min_x=215.80, min_y=99.59, max_x=363.41, max_y=959.65)
+    PASS: Complete coverage (670 tiles)
+  Test 44: Angle 4.8°, Aspect 4.1
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: 45.00 degrees
-    Stretch Factor: 1.00
-    Original SnugBox: (min_x=8.54, min_y=8.54, max_x=291.46, max_y=291.46)
-    DualBox (Left): (min_x=8.54, min_y=8.54, max_x=150.00, max_y=150.00)
-    DualBox (Right): (min_x=150.00, min_y=150.00, max_x=291.46, max_y=291.46)
-    PASS: Complete coverage (199 tiles)
-  Test 26: Angle 135.0°, Aspect 2.0
+    Ellipse Params: A=0.000091, B=-0.000108, C=0.001367, opacity=1.000000
+    Computed Tilt Angle: -85.18 degrees
+    Eccentricity: 0.969675
+    Stretch Factor: 1.95
+    Original SnugBox: (min_x=5.52, min_y=236.43, max_x=737.46, max_y=425.61)
+    DualBox (Left): (min_x=5.52, min_y=236.43, max_x=719.86, max_y=331.02)
+    DualBox (Right): (min_x=23.12, min_y=331.02, max_x=737.46, max_y=425.61)
+    PASS: Complete coverage (514 tiles)
+  Test 45: Angle 198.8°, Aspect 2.0
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: 45.00 degrees
-    Stretch Factor: 1.00
-    Original SnugBox: (min_x=18.41, min_y=18.41, max_x=281.59, max_y=281.59)
-    DualBox (Left): (min_x=18.41, min_y=18.41, max_x=150.00, max_y=150.00)
-    DualBox (Right): (min_x=150.00, min_y=150.00, max_x=281.59, max_y=281.59)
-    PASS: Complete coverage (161 tiles)
-  Test 27: Angle 135.0°, Aspect 3.0
+    Ellipse Params: A=0.000041, B=-0.000030, C=0.000118, opacity=1.000000
+    Computed Tilt Angle: -71.18 degrees
+    Eccentricity: 0.871805
+    Stretch Factor: 1.90
+    Original SnugBox: (min_x=-218.24, min_y=37.14, max_x=935.78, max_y=716.35)
+    DualBox (Left): (min_x=-218.24, min_y=37.14, max_x=880.24, max_y=376.75)
+    DualBox (Right): (min_x=-162.70, min_y=376.75, max_x=935.78, max_y=716.35)
+    PASS: Complete coverage (1520 tiles)
+  Test 46: Angle 221.7°, Aspect 12.6
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: 45.00 degrees
-    Stretch Factor: 1.00
-    Original SnugBox: (min_x=25.93, min_y=25.93, max_x=274.07, max_y=274.07)
-    DualBox (Left): (min_x=25.93, min_y=25.93, max_x=150.00, max_y=150.00)
-    DualBox (Right): (min_x=150.00, min_y=150.00, max_x=274.07, max_y=274.07)
-    PASS: Complete coverage (161 tiles)
-  Test 28: Angle 135.0°, Aspect 4.0
+    Ellipse Params: A=0.004058, B=-0.004487, C=0.005088, opacity=1.000000
+    Computed Tilt Angle: -48.27 degrees
+    Eccentricity: 0.996857
+    Stretch Factor: 1.16
+    Original SnugBox: (min_x=-111.51, min_y=5.97, max_x=548.03, max_y=595.01)
+    DualBox (Left): (min_x=-111.51, min_y=5.97, max_x=270.52, max_y=300.49)
+    DualBox (Right): (min_x=166.00, min_y=300.49, max_x=548.03, max_y=595.01)
+    PASS: Complete coverage (816 tiles)
+  Test 47: Angle 215.3°, Aspect 9.6
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: 45.00 degrees
-    Stretch Factor: 1.00
-    Original SnugBox: (min_x=28.68, min_y=28.68, max_x=271.32, max_y=271.32)
-    DualBox (Left): (min_x=28.68, min_y=28.68, max_x=150.00, max_y=150.00)
-    DualBox (Right): (min_x=150.00, min_y=150.00, max_x=271.32, max_y=271.32)
-    PASS: Complete coverage (144 tiles)
-  Test 29: Angle 150.0°, Aspect 1.5
+    Ellipse Params: A=0.001876, B=-0.002560, C=0.003669, opacity=1.000000
+    Computed Tilt Angle: -54.65 degrees
+    Eccentricity: 0.994514
+    Stretch Factor: 1.22
+    Original SnugBox: (min_x=-206.78, min_y=56.94, max_x=496.18, max_y=559.55)
+    DualBox (Left): (min_x=-206.78, min_y=56.94, max_x=221.57, max_y=308.24)
+    DualBox (Right): (min_x=67.83, min_y=308.24, max_x=496.18, max_y=559.55)
+    PASS: Complete coverage (676 tiles)
+  Test 48: Angle 164.8°, Aspect 7.8
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: 60.00 degrees
-    Stretch Factor: 1.55
-    Original SnugBox: (min_x=-4.46, min_y=22.87, max_x=304.46, max_y=277.13)
-    DualBox (Left): (min_x=-4.46, min_y=22.87, max_x=234.95, max_y=150.00)
-    DualBox (Right): (min_x=65.05, min_y=150.00, max_x=304.46, max_y=277.13)
-    PASS: Complete coverage (268 tiles)
-  Test 30: Angle 150.0°, Aspect 2.0
+    Ellipse Params: A=0.000314, B=0.000930, C=0.003474, opacity=1.000000
+    Computed Tilt Angle: 74.76 degrees
+    Eccentricity: 0.991826
+    Stretch Factor: 1.46
+    Original SnugBox: (min_x=-274.06, min_y=167.61, max_x=551.02, max_y=415.70)
+    DualBox (Left): (min_x=-274.06, min_y=167.61, max_x=326.31, max_y=291.65)
+    DualBox (Right): (min_x=-49.36, min_y=291.65, max_x=551.02, max_y=415.70)
+    PASS: Complete coverage (448 tiles)
+  Test 49: Angle 232.0°, Aspect 1.7
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: 60.00 degrees
-    Stretch Factor: 1.55
-    Original SnugBox: (min_x=-0.04, min_y=39.90, max_x=300.04, max_y=260.10)
-    DualBox (Left): (min_x=-0.04, min_y=39.90, max_x=232.52, max_y=150.00)
-    DualBox (Right): (min_x=67.48, min_y=150.00, max_x=300.04, max_y=260.10)
-    PASS: Complete coverage (229 tiles)
-  Test 31: Angle 150.0°, Aspect 3.0
+    Ellipse Params: A=0.000222, B=-0.000097, C=0.000174, opacity=1.000000
+    Computed Tilt Angle: -38.03 degrees
+    Eccentricity: 0.817366
+    Stretch Factor: 1.87
+    Original SnugBox: (min_x=-83.65, min_y=34.17, max_x=428.79, max_y=612.80)
+    DualBox (Left): (min_x=-83.65, min_y=34.17, max_x=172.57, max_y=575.62)
+    DualBox (Right): (min_x=172.57, min_y=71.35, max_x=428.79, max_y=612.80)
+    PASS: Complete coverage (937 tiles)
+  Test 50: Angle 304.7°, Aspect 2.6
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: 60.00 degrees
-    Stretch Factor: 1.55
-    Original SnugBox: (min_x=3.20, min_y=53.90, max_x=296.80, max_y=246.10)
-    DualBox (Left): (min_x=3.20, min_y=53.90, max_x=230.74, max_y=150.00)
-    DualBox (Right): (min_x=69.26, min_y=150.00, max_x=296.80, max_y=246.10)
-    PASS: Complete coverage (199 tiles)
-  Test 32: Angle 150.0°, Aspect 4.0
+    Ellipse Params: A=0.000262, B=0.000143, C=0.000154, opacity=1.000000
+    Computed Tilt Angle: 34.68 degrees
+    Eccentricity: 0.921070
+    Stretch Factor: 1.70
+    Original SnugBox: (min_x=-191.55, min_y=-90.98, max_x=395.94, max_y=675.25)
+    DualBox (Left): (min_x=-191.55, min_y=-90.98, max_x=102.19, max_y=560.41)
+    DualBox (Right): (min_x=102.19, min_y=23.86, max_x=395.94, max_y=675.25)
+    PASS: Complete coverage (958 tiles)
+  Test 51: Angle 120.4°, Aspect 7.9
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: 60.00 degrees
-    Stretch Factor: 1.55
-    Original SnugBox: (min_x=4.35, min_y=59.31, max_x=295.65, max_y=240.69)
-    DualBox (Left): (min_x=4.35, min_y=59.31, max_x=230.11, max_y=150.00)
-    DualBox (Right): (min_x=69.89, min_y=150.00, max_x=295.65, max_y=240.69)
-    PASS: Complete coverage (199 tiles)
+    Ellipse Params: A=0.001205, B=0.000692, C=0.000432, opacity=1.000000
+    Computed Tilt Angle: 30.42 degrees
+    Eccentricity: 0.991900
+    Stretch Factor: 1.28
+    Original SnugBox: (min_x=-65.55, min_y=-254.41, max_x=610.97, max_y=875.00)
+    DualBox (Left): (min_x=-65.55, min_y=-254.41, max_x=272.71, max_y=470.42)
+    DualBox (Right): (min_x=272.71, min_y=150.16, max_x=610.97, max_y=875.00)
+    PASS: Complete coverage (1201 tiles)
+  Test 52: Angle 150.8°, Aspect 6.9
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000549, B=0.000901, C=0.001660, opacity=1.000000
+    Computed Tilt Angle: 60.83 degrees
+    Eccentricity: 0.989287
+    Stretch Factor: 1.33
+    Original SnugBox: (min_x=-293.36, min_y=146.27, max_x=565.81, max_y=640.35)
+    DualBox (Left): (min_x=-293.36, min_y=146.27, max_x=278.31, max_y=393.31)
+    DualBox (Right): (min_x=-5.86, min_y=393.31, max_x=565.81, max_y=640.35)
+    PASS: Complete coverage (846 tiles)
+  Test 53: Angle 21.7°, Aspect 11.9
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000738, B=-0.001759, C=0.004451, opacity=1.000000
+    Computed Tilt Angle: -68.27 degrees
+    Eccentricity: 0.996462
+    Stretch Factor: 1.24
+    Original SnugBox: (min_x=-143.17, min_y=162.81, max_x=882.72, max_y=580.46)
+    DualBox (Left): (min_x=-143.17, min_y=162.81, max_x=492.35, max_y=371.64)
+    DualBox (Right): (min_x=247.20, min_y=371.64, max_x=882.72, max_y=580.46)
+    PASS: Complete coverage (768 tiles)
+  Test 54: Angle 334.8°, Aspect 1.3
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000091, B=0.000023, C=0.000129, opacity=1.000000
+    Computed Tilt Angle: 64.77 degrees
+    Eccentricity: 0.654578
+    Stretch Factor: 1.98
+    Original SnugBox: (min_x=-81.99, min_y=-160.65, max_x=632.47, max_y=438.90)
+    DualBox (Left): (min_x=-81.99, min_y=-160.65, max_x=624.24, max_y=139.12)
+    DualBox (Right): (min_x=-73.75, min_y=139.12, max_x=632.47, max_y=438.90)
+    PASS: Complete coverage (1120 tiles)
+  Test 55: Angle 262.3°, Aspect 4.3
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.001465, B=-0.000187, C=0.000106, opacity=1.000000
+    Computed Tilt Angle: -7.70 degrees
+    Eccentricity: 0.972650
+    Stretch Factor: 1.88
+    Original SnugBox: (min_x=157.08, min_y=-111.26, max_x=354.86, max_y=624.94)
+    DualBox (Left): (min_x=157.08, min_y=-111.26, max_x=255.97, max_y=580.60)
+    DualBox (Right): (min_x=255.97, min_y=-66.92, max_x=354.86, max_y=624.94)
+    PASS: Complete coverage (542 tiles)
+  Test 56: Angle 96.2°, Aspect 12.4
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.004783, B=0.000517, C=0.000088, opacity=1.000000
+    Computed Tilt Angle: 6.21 degrees
+    Eccentricity: 0.996757
+    Stretch Factor: 1.60
+    Original SnugBox: (min_x=198.86, min_y=-363.88, max_x=358.93, max_y=818.54)
+    DualBox (Left): (min_x=198.86, min_y=-363.88, max_x=278.90, max_y=582.92)
+    DualBox (Right): (min_x=278.90, min_y=-128.25, max_x=358.93, max_y=818.54)
+    PASS: Complete coverage (425 tiles)
+  Test 57: Angle 136.3°, Aspect 9.2
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.005721, B=0.005837, C=0.006243, opacity=1.000000
+    Computed Tilt Angle: 46.28 degrees
+    Eccentricity: 0.994088
+    Stretch Factor: 1.21
+    Original SnugBox: (min_x=27.79, min_y=49.95, max_x=437.53, max_y=442.19)
+    DualBox (Left): (min_x=27.79, min_y=49.95, max_x=276.67, max_y=246.07)
+    DualBox (Right): (min_x=188.65, min_y=246.07, max_x=437.53, max_y=442.19)
+    PASS: Complete coverage (435 tiles)
+  Test 58: Angle 260.3°, Aspect 7.6
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.004109, B=-0.000690, C=0.000191, opacity=1.000000
+    Computed Tilt Angle: -9.71 degrees
+    Eccentricity: 0.991324
+    Stretch Factor: 1.63
+    Original SnugBox: (min_x=71.63, min_y=-103.71, max_x=237.29, max_y=664.46)
+    DualBox (Left): (min_x=71.63, min_y=-103.71, max_x=154.46, max_y=521.19)
+    DualBox (Right): (min_x=154.46, min_y=39.56, max_x=237.29, max_y=664.46)
+    PASS: Complete coverage (395 tiles)
+  Test 59: Angle 25.2°, Aspect 11.9
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.001378, B=-0.002812, C=0.006014, opacity=1.000000
+    Computed Tilt Angle: -64.75 degrees
+    Eccentricity: 0.996445
+    Stretch Factor: 1.21
+    Original SnugBox: (min_x=-309.77, min_y=-0.30, max_x=525.23, max_y=399.41)
+    DualBox (Left): (min_x=-309.77, min_y=-0.30, max_x=197.41, max_y=199.56)
+    DualBox (Right): (min_x=18.05, min_y=199.56, max_x=525.23, max_y=399.41)
+    PASS: Complete coverage (573 tiles)
+  Test 60: Angle 317.5°, Aspect 4.1
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.001041, B=0.000996, C=0.001214, opacity=1.000000
+    Computed Tilt Angle: 47.49 degrees
+    Eccentricity: 0.969521
+    Stretch Factor: 1.46
+    Original SnugBox: (min_x=-94.16, min_y=-21.75, max_x=350.96, max_y=390.35)
+    DualBox (Left): (min_x=-94.16, min_y=-21.75, max_x=231.58, max_y=184.30)
+    DualBox (Right): (min_x=25.21, min_y=184.30, max_x=350.96, max_y=390.35)
+    PASS: Complete coverage (460 tiles)
+  Test 61: Angle 301.7°, Aspect 11.9
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.007267, B=0.004437, C=0.002806, opacity=1.000000
+    Computed Tilt Angle: 31.65 degrees
+    Eccentricity: 0.996487
+    Stretch Factor: 1.19
+    Original SnugBox: (min_x=178.00, min_y=9.26, max_x=599.00, max_y=686.81)
+    DualBox (Left): (min_x=178.00, min_y=9.26, max_x=388.50, max_y=410.88)
+    DualBox (Right): (min_x=388.50, min_y=285.19, max_x=599.00, max_y=686.81)
+    PASS: Complete coverage (677 tiles)
+  Test 62: Angle 337.7°, Aspect 1.5
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000039, B=0.000013, C=0.000065, opacity=1.000000
+    Computed Tilt Angle: 67.68 degrees
+    Eccentricity: 0.728993
+    Stretch Factor: 1.96
+    Original SnugBox: (min_x=-455.16, min_y=-39.94, max_x=656.50, max_y=814.26)
+    DualBox (Left): (min_x=-455.16, min_y=-39.94, max_x=636.92, max_y=387.16)
+    DualBox (Right): (min_x=-435.57, min_y=387.16, max_x=656.50, max_y=814.26)
+    PASS: Complete coverage (1600 tiles)
+  Test 63: Angle 332.8°, Aspect 5.3
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000265, B=0.000439, C=0.000894, opacity=1.000000
+    Computed Tilt Angle: 62.79 degrees
+    Eccentricity: 0.982239
+    Stretch Factor: 1.43
+    Original SnugBox: (min_x=-141.48, min_y=140.41, max_x=805.82, max_y=656.48)
+    DualBox (Left): (min_x=-141.48, min_y=140.41, max_x=536.52, max_y=398.44)
+    DualBox (Right): (min_x=127.81, min_y=398.44, max_x=805.82, max_y=656.48)
+    PASS: Complete coverage (1079 tiles)
+  Test 64: Angle 260.3°, Aspect 7.8
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.002875, B=-0.000482, C=0.000131, opacity=1.000000
+    Computed Tilt Angle: -9.67 degrees
+    Eccentricity: 0.991673
+    Stretch Factor: 1.62
+    Original SnugBox: (min_x=47.63, min_y=-300.60, max_x=247.85, max_y=636.85)
+    DualBox (Left): (min_x=47.63, min_y=-300.60, max_x=147.74, max_y=458.82)
+    DualBox (Right): (min_x=147.74, min_y=-122.57, max_x=247.85, max_y=636.85)
+    PASS: Complete coverage (483 tiles)
+  Test 65: Angle 342.8°, Aspect 11.6
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.001384, B=0.004124, C=0.013450, opacity=1.000000
+    Computed Tilt Angle: 72.82 degrees
+    Eccentricity: 0.996290
+    Stretch Factor: 1.29
+    Original SnugBox: (min_x=-90.16, min_y=113.05, max_x=519.18, max_y=308.52)
+    DualBox (Left): (min_x=-90.16, min_y=113.05, max_x=304.00, max_y=210.79)
+    DualBox (Right): (min_x=125.02, min_y=210.79, max_x=519.18, max_y=308.52)
+    PASS: Complete coverage (309 tiles)
+  Test 66: Angle 322.2°, Aspect 14.1
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.002780, B=0.003541, C=0.004608, opacity=1.000000
+    Computed Tilt Angle: 52.24 degrees
+    Eccentricity: 0.997478
+    Stretch Factor: 1.15
+    Original SnugBox: (min_x=-308.69, min_y=8.18, max_x=557.67, max_y=681.11)
+    DualBox (Left): (min_x=-308.69, min_y=8.18, max_x=187.63, max_y=344.64)
+    DualBox (Right): (min_x=61.35, min_y=344.64, max_x=557.67, max_y=681.11)
+    PASS: Complete coverage (863 tiles)
+  Test 67: Angle 163.4°, Aspect 9.7
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000250, B=0.000742, C=0.002524, opacity=1.000000
+    Computed Tilt Angle: 73.43 degrees
+    Eccentricity: 0.994715
+    Stretch Factor: 1.35
+    Original SnugBox: (min_x=-406.94, min_y=9.07, max_x=780.01, max_y=382.57)
+    DualBox (Left): (min_x=-406.94, min_y=9.07, max_x=397.13, max_y=195.82)
+    DualBox (Right): (min_x=-24.06, min_y=195.82, max_x=780.01, max_y=382.57)
+    PASS: Complete coverage (780 tiles)
+  Test 68: Angle 181.2°, Aspect 14.5
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000098, B=-0.000384, C=0.018951, opacity=1.000000
+    Computed Tilt Angle: -88.83 degrees
+    Eccentricity: 0.997613
+    Stretch Factor: 1.96
+    Original SnugBox: (min_x=49.17, min_y=191.27, max_x=749.26, max_y=241.67)
+    DualBox (Left): (min_x=49.17, min_y=191.27, max_x=735.10, max_y=216.47)
+    DualBox (Right): (min_x=63.33, min_y=216.47, max_x=749.26, max_y=241.67)
+    PASS: Complete coverage (185 tiles)
+  Test 69: Angle 175.0°, Aspect 6.8
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000102, B=0.000301, C=0.003488, opacity=1.000000
+    Computed Tilt Angle: 84.97 degrees
+    Eccentricity: 0.989215
+    Stretch Factor: 1.86
+    Original SnugBox: (min_x=-274.39, min_y=326.76, max_x=489.47, max_y=457.31)
+    DualBox (Left): (min_x=-274.39, min_y=326.76, max_x=437.34, max_y=392.03)
+    DualBox (Right): (min_x=-222.27, min_y=392.03, max_x=489.47, max_y=457.31)
+    PASS: Complete coverage (267 tiles)
+  Test 70: Angle 240.9°, Aspect 15.0
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.005188, B=-0.002872, C=0.001629, opacity=1.000000
+    Computed Tilt Angle: -29.11 degrees
+    Eccentricity: 0.997770
+    Stretch Factor: 1.16
+    Original SnugBox: (min_x=-63.06, min_y=-196.63, max_x=530.19, max_y=861.99)
+    DualBox (Left): (min_x=-63.06, min_y=-196.63, max_x=233.56, max_y=415.15)
+    DualBox (Right): (min_x=233.56, min_y=250.20, max_x=530.19, max_y=861.99)
+    PASS: Complete coverage (879 tiles)
+  Test 71: Angle 16.1°, Aspect 9.2
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000431, B=-0.001291, C=0.004527, opacity=1.000000
+    Computed Tilt Angle: -73.89 degrees
+    Eccentricity: 0.994025
+    Stretch Factor: 1.38
+    Original SnugBox: (min_x=-236.93, min_y=183.81, max_x=600.70, max_y=442.29)
+    DualBox (Left): (min_x=-236.93, min_y=183.81, max_x=342.22, max_y=313.05)
+    DualBox (Right): (min_x=21.55, min_y=313.05, max_x=600.70, max_y=442.29)
+    PASS: Complete coverage (510 tiles)
+  Test 72: Angle 40.2°, Aspect 9.8
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.004492, B=-0.005188, C=0.006253, opacity=1.000000
+    Computed Tilt Angle: -49.82 degrees
+    Eccentricity: 0.994783
+    Stretch Factor: 1.20
+    Original SnugBox: (min_x=58.53, min_y=26.78, max_x=543.86, max_y=438.10)
+    DualBox (Left): (min_x=58.53, min_y=26.78, max_x=350.87, max_y=232.44)
+    DualBox (Right): (min_x=251.52, min_y=232.44, max_x=543.86, max_y=438.10)
+    PASS: Complete coverage (525 tiles)
+  Test 73: Angle 349.9°, Aspect 3.4
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000054, B=0.000076, C=0.000464, opacity=1.000000
+    Computed Tilt Angle: 79.89 degrees
+    Eccentricity: 0.957038
+    Stretch Factor: 1.88
+    Original SnugBox: (min_x=-131.77, min_y=-48.54, max_x=903.59, max_y=303.41)
+    DualBox (Left): (min_x=-131.77, min_y=-48.54, max_x=840.31, max_y=127.44)
+    DualBox (Right): (min_x=-68.49, min_y=127.44, max_x=903.59, max_y=303.41)
+    PASS: Complete coverage (760 tiles)
+  Test 74: Angle 138.8°, Aspect 9.3
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.002868, B=0.003191, C=0.003722, opacity=1.000000
+    Computed Tilt Angle: 48.81 degrees
+    Eccentricity: 0.994199
+    Stretch Factor: 1.21
+    Original SnugBox: (min_x=-126.37, min_y=135.92, max_x=453.32, max_y=644.76)
+    DualBox (Left): (min_x=-126.37, min_y=135.92, max_x=225.64, max_y=390.34)
+    DualBox (Right): (min_x=101.31, min_y=390.34, max_x=453.32, max_y=644.76)
+    PASS: Complete coverage (614 tiles)
+  Test 75: Angle 286.2°, Aspect 5.5
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.001994, B=0.000560, C=0.000234, opacity=1.000000
+    Computed Tilt Angle: 16.23 degrees
+    Eccentricity: 0.983438
+    Stretch Factor: 1.57
+    Original SnugBox: (min_x=-18.35, min_y=-129.49, max_x=242.01, max_y=630.96)
+    DualBox (Left): (min_x=-18.35, min_y=-129.49, max_x=111.83, max_y=468.45)
+    DualBox (Right): (min_x=111.83, min_y=33.01, max_x=242.01, max_y=630.96)
+    PASS: Complete coverage (562 tiles)
+  Test 76: Angle 177.7°, Aspect 10.9
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000042, B=0.000165, C=0.004132, opacity=1.000000
+    Computed Tilt Angle: 87.69 degrees
+    Eccentricity: 0.995767
+    Stretch Factor: 1.92
+    Original SnugBox: (min_x=-411.02, min_y=260.63, max_x=713.99, max_y=373.55)
+    DualBox (Left): (min_x=-411.02, min_y=260.63, max_x=667.46, max_y=317.09)
+    DualBox (Right): (min_x=-364.48, min_y=317.09, max_x=713.99, max_y=373.55)
+    PASS: Complete coverage (320 tiles)
+  Test 77: Angle 216.4°, Aspect 9.2
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.003361, B=-0.004411, C=0.006098, opacity=1.000000
+    Computed Tilt Angle: -53.62 degrees
+    Eccentricity: 0.994057
+    Stretch Factor: 1.22
+    Original SnugBox: (min_x=100.98, min_y=158.34, max_x=611.87, max_y=537.61)
+    DualBox (Left): (min_x=100.98, min_y=158.34, max_x=413.85, max_y=347.97)
+    DualBox (Right): (min_x=299.01, min_y=347.97, max_x=611.87, max_y=537.61)
+    PASS: Complete coverage (525 tiles)
+  Test 78: Angle 15.3°, Aspect 5.7
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000126, B=-0.000317, C=0.001197, opacity=1.000000
+    Computed Tilt Angle: -74.71 degrees
+    Eccentricity: 0.984624
+    Stretch Factor: 1.58
+    Original SnugBox: (min_x=-249.63, min_y=21.04, max_x=777.65, max_y=353.96)
+    DualBox (Left): (min_x=-249.63, min_y=21.04, max_x=560.88, max_y=187.50)
+    DualBox (Right): (min_x=-32.87, min_y=187.50, max_x=777.65, max_y=353.96)
+    PASS: Complete coverage (840 tiles)
+  Test 79: Angle 299.1°, Aspect 14.7
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.004316, B=0.002384, C=0.001350, opacity=1.000000
+    Computed Tilt Angle: 29.06 degrees
+    Eccentricity: 0.997693
+    Stretch Factor: 1.16
+    Original SnugBox: (min_x=-111.45, min_y=-372.91, max_x=527.48, max_y=769.43)
+    DualBox (Left): (min_x=-111.45, min_y=-372.91, max_x=208.01, max_y=288.86)
+    DualBox (Right): (min_x=208.01, min_y=107.66, max_x=527.48, max_y=769.43)
+    PASS: Complete coverage (933 tiles)
+  Test 80: Angle 197.0°, Aspect 2.3
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000113, B=-0.000102, C=0.000414, opacity=1.000000
+    Computed Tilt Angle: -72.99 degrees
+    Eccentricity: 0.903076
+    Stretch Factor: 1.88
+    Original SnugBox: (min_x=34.68, min_y=-41.35, max_x=743.42, max_y=329.20)
+    DualBox (Left): (min_x=34.68, min_y=-41.35, max_x=701.99, max_y=143.92)
+    DualBox (Right): (min_x=76.10, min_y=143.92, max_x=743.42, max_y=329.20)
+    PASS: Complete coverage (774 tiles)
+  Test 81: Angle 356.1°, Aspect 8.2
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000036, B=0.000124, C=0.001877, opacity=1.000000
+    Computed Tilt Angle: 86.15 degrees
+    Eccentricity: 0.992618
+    Stretch Factor: 1.88
+    Original SnugBox: (min_x=-386.27, min_y=267.66, max_x=875.18, max_y=442.63)
+    DualBox (Left): (min_x=-386.27, min_y=267.66, max_x=798.43, max_y=355.15)
+    DualBox (Right): (min_x=-309.52, min_y=355.15, max_x=875.18, max_y=442.63)
+    PASS: Complete coverage (480 tiles)
+  Test 82: Angle 5.6°, Aspect 8.0
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000147, B=-0.000557, C=0.005804, opacity=1.000000
+    Computed Tilt Angle: -84.43 degrees
+    Eccentricity: 0.992082
+    Stretch Factor: 1.80
+    Original SnugBox: (min_x=-104.13, min_y=265.71, max_x=585.30, max_y=375.33)
+    DualBox (Left): (min_x=-104.13, min_y=265.71, max_x=515.43, max_y=320.52)
+    DualBox (Right): (min_x=-34.26, min_y=320.52, max_x=585.30, max_y=375.33)
+    PASS: Complete coverage (280 tiles)
+  Test 83: Angle 201.2°, Aspect 10.7
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.002050, B=-0.004949, C=0.012871, opacity=1.000000
+    Computed Tilt Angle: -68.78 degrees
+    Eccentricity: 0.995662
+    Stretch Factor: 1.27
+    Original SnugBox: (min_x=-157.22, min_y=260.12, max_x=391.57, max_y=479.12)
+    DualBox (Left): (min_x=-157.22, min_y=260.12, max_x=190.70, max_y=369.62)
+    DualBox (Right): (min_x=43.64, min_y=369.62, max_x=391.57, max_y=479.12)
+    PASS: Complete coverage (247 tiles)
+  Test 84: Angle 169.9°, Aspect 9.7
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000178, B=0.000739, C=0.004188, opacity=1.000000
+    Computed Tilt Angle: 79.88 degrees
+    Eccentricity: 0.994617
+    Stretch Factor: 1.52
+    Original SnugBox: (min_x=-83.68, min_y=85.26, max_x=878.90, max_y=283.88)
+    DualBox (Left): (min_x=-83.68, min_y=85.26, max_x=646.92, max_y=184.57)
+    DualBox (Right): (min_x=148.31, min_y=184.57, max_x=878.90, max_y=283.88)
+    PASS: Complete coverage (466 tiles)
+  Test 85: Angle 249.3°, Aspect 8.6
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.004516, B=-0.001677, C=0.000703, opacity=1.000000
+    Computed Tilt Angle: -20.67 degrees
+    Eccentricity: 0.993158
+    Stretch Factor: 1.34
+    Original SnugBox: (min_x=208.35, min_y=-220.04, max_x=501.99, max_y=524.11)
+    DualBox (Left): (min_x=208.35, min_y=-220.04, max_x=355.17, max_y=277.59)
+    DualBox (Right): (min_x=355.17, min_y=26.49, max_x=501.99, max_y=524.11)
+    PASS: Complete coverage (483 tiles)
+  Test 86: Angle 14.0°, Aspect 1.7
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000036, B=-0.000015, C=0.000094, opacity=1.000000
+    Computed Tilt Angle: -76.00 degrees
+    Eccentricity: 0.818757
+    Stretch Factor: 1.96
+    Original SnugBox: (min_x=-377.83, min_y=-34.14, max_x=773.90, max_y=679.47)
+    DualBox (Left): (min_x=-377.83, min_y=-34.14, max_x=753.43, max_y=322.66)
+    DualBox (Right): (min_x=-357.35, min_y=322.66, max_x=773.90, max_y=679.47)
+    PASS: Complete coverage (1600 tiles)
+  Test 87: Angle 128.1°, Aspect 8.5
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.002499, B=0.001915, C=0.001556, opacity=1.000000
+    Computed Tilt Angle: 38.09 degrees
+    Eccentricity: 0.993109
+    Stretch Factor: 1.24
+    Original SnugBox: (min_x=-128.91, min_y=-57.33, max_x=431.38, max_y=652.71)
+    DualBox (Left): (min_x=-128.91, min_y=-57.33, max_x=151.23, max_y=382.09)
+    DualBox (Right): (min_x=151.23, min_y=213.29, max_x=431.38, max_y=652.71)
+    PASS: Complete coverage (715 tiles)
+  Test 88: Angle 256.6°, Aspect 2.3
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000322, B=-0.000062, C=0.000079, opacity=1.000000
+    Computed Tilt Angle: -13.41 degrees
+    Eccentricity: 0.900040
+    Stretch Factor: 1.92
+    Original SnugBox: (min_x=-12.23, min_y=-157.63, max_x=390.10, max_y=656.61)
+    DualBox (Left): (min_x=-12.23, min_y=-157.63, max_x=188.93, max_y=624.92)
+    DualBox (Right): (min_x=188.93, min_y=-125.95, max_x=390.10, max_y=656.61)
+    PASS: Complete coverage (1000 tiles)
+  Test 89: Angle 73.2°, Aspect 2.7
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000269, B=-0.000069, C=0.000062, opacity=1.000000
+    Computed Tilt Angle: -16.77 degrees
+    Eccentricity: 0.926955
+    Stretch Factor: 1.85
+    Original SnugBox: (min_x=-71.92, min_y=-228.94, max_x=408.22, max_y=775.23)
+    DualBox (Left): (min_x=-71.92, min_y=-228.94, max_x=168.15, max_y=697.45)
+    DualBox (Right): (min_x=168.15, min_y=-151.16, max_x=408.22, max_y=775.23)
+    PASS: Complete coverage (1040 tiles)
+  Test 90: Angle 218.0°, Aspect 10.6
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.001640, B=-0.002052, C=0.002666, opacity=1.000000
+    Computed Tilt Angle: -52.02 degrees
+    Eccentricity: 0.995521
+    Stretch Factor: 1.19
+    Original SnugBox: (min_x=-260.90, min_y=27.64, max_x=591.06, max_y=695.86)
+    DualBox (Left): (min_x=-260.90, min_y=27.64, max_x=247.28, max_y=361.75)
+    DualBox (Right): (min_x=82.88, min_y=361.75, max_x=591.06, max_y=695.86)
+    PASS: Complete coverage (917 tiles)
+  Test 91: Angle 8.0°, Aspect 1.5
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000160, B=-0.000024, C=0.000327, opacity=1.000000
+    Computed Tilt Angle: -81.98 degrees
+    Eccentricity: 0.725257
+    Stretch Factor: 1.99
+    Original SnugBox: (min_x=-142.48, min_y=51.98, max_x=386.59, max_y=422.04)
+    DualBox (Left): (min_x=-142.48, min_y=51.98, max_x=385.13, max_y=237.01)
+    DualBox (Right): (min_x=-141.02, min_y=237.01, max_x=386.59, max_y=422.04)
+    PASS: Complete coverage (600 tiles)
+  Test 92: Angle 68.4°, Aspect 13.3
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.010529, B=-0.004141, C=0.001708, opacity=1.000000
+    Computed Tilt Angle: -21.60 degrees
+    Eccentricity: 0.997169
+    Stretch Factor: 1.22
+    Original SnugBox: (min_x=111.39, min_y=-116.09, max_x=412.10, max_y=630.59)
+    DualBox (Left): (min_x=111.39, min_y=-116.09, max_x=261.75, max_y=337.81)
+    DualBox (Right): (min_x=261.75, min_y=176.69, max_x=412.10, max_y=630.59)
+    PASS: Complete coverage (521 tiles)
+  Test 93: Angle 189.2°, Aspect 8.7
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000142, B=-0.000573, C=0.003598, opacity=1.000000
+    Computed Tilt Angle: -80.82 degrees
+    Eccentricity: 0.993355
+    Stretch Factor: 1.60
+    Original SnugBox: (min_x=-297.07, min_y=161.68, max_x=643.20, max_y=348.17)
+    DualBox (Left): (min_x=-297.07, min_y=161.68, max_x=452.91, max_y=254.93)
+    DualBox (Right): (min_x=-106.78, min_y=254.93, max_x=643.20, max_y=348.17)
+    PASS: Complete coverage (425 tiles)
+  Test 94: Angle 321.7°, Aspect 13.4
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.001978, B=0.002469, C=0.003155, opacity=1.000000
+    Computed Tilt Angle: 51.71 degrees
+    Eccentricity: 0.997220
+    Stretch Factor: 1.15
+    Original SnugBox: (min_x=-268.58, min_y=-225.04, max_x=714.69, max_y=553.40)
+    DualBox (Left): (min_x=-268.58, min_y=-225.04, max_x=297.92, max_y=164.18)
+    DualBox (Right): (min_x=148.20, min_y=164.18, max_x=714.69, max_y=553.40)
+    PASS: Complete coverage (974 tiles)
+  Test 95: Angle 295.0°, Aspect 14.6
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.005445, B=0.002528, C=0.001211, opacity=1.000000
+    Computed Tilt Angle: 25.03 degrees
+    Eccentricity: 0.997643
+    Stretch Factor: 1.18
+    Original SnugBox: (min_x=3.72, min_y=-262.05, max_x=513.42, max_y=818.56)
+    DualBox (Left): (min_x=3.72, min_y=-262.05, max_x=258.57, max_y=373.90)
+    DualBox (Right): (min_x=258.57, min_y=182.61, max_x=513.42, max_y=818.56)
+    PASS: Complete coverage (888 tiles)
+  Test 96: Angle 258.7°, Aspect 3.9
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000457, B=-0.000085, C=0.000049, opacity=1.000000
+    Computed Tilt Angle: -11.27 degrees
+    Eccentricity: 0.965823
+    Stretch Factor: 1.82
+    Original SnugBox: (min_x=143.50, min_y=-223.80, max_x=521.68, max_y=934.49)
+    DualBox (Left): (min_x=143.50, min_y=-223.80, max_x=332.59, max_y=832.10)
+    DualBox (Right): (min_x=332.59, min_y=-121.41, max_x=521.68, max_y=934.49)
+    PASS: Complete coverage (1000 tiles)
+  Test 97: Angle 2.0°, Aspect 9.5
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000166, B=-0.000457, C=0.013546, opacity=1.000000
+    Computed Tilt Angle: -88.04 degrees
+    Eccentricity: 0.994447
+    Stretch Factor: 1.95
+    Original SnugBox: (min_x=-54.66, min_y=244.31, max_x=488.28, max_y=304.38)
+    DualBox (Left): (min_x=-54.66, min_y=244.31, max_x=475.33, max_y=274.34)
+    DualBox (Right): (min_x=-41.72, min_y=274.34, max_x=488.28, max_y=304.38)
+    PASS: Complete coverage (153 tiles)
+  Test 98: Angle 234.8°, Aspect 4.6
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000459, B=-0.000302, C=0.000245, opacity=1.000000
+    Computed Tilt Angle: -35.25 degrees
+    Eccentricity: 0.976110
+    Stretch Factor: 1.44
+    Original SnugBox: (min_x=-177.69, min_y=-317.38, max_x=536.19, max_y=659.61)
+    DualBox (Left): (min_x=-177.69, min_y=-317.38, max_x=179.25, max_y=383.88)
+    DualBox (Right): (min_x=179.25, min_y=-41.65, max_x=536.19, max_y=659.61)
+    PASS: Complete coverage (1184 tiles)
+  Test 99: Angle 15.8°, Aspect 1.9
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000034, B=-0.000020, C=0.000100, opacity=1.000000
+    Computed Tilt Angle: -74.16 degrees
+    Eccentricity: 0.854393
+    Stretch Factor: 1.94
+    Original SnugBox: (min_x=-456.02, min_y=-87.55, max_x=755.36, max_y=622.02)
+    DualBox (Left): (min_x=-456.02, min_y=-87.55, max_x=717.91, max_y=267.23)
+    DualBox (Right): (min_x=-418.57, min_y=267.23, max_x=755.36, max_y=622.02)
+    PASS: Complete coverage (1560 tiles)
+  Test 100: Angle 247.3°, Aspect 1.4
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000067, B=-0.000013, C=0.000041, opacity=1.000000
+    Computed Tilt Angle: -22.74 degrees
+    Eccentricity: 0.713902
+    Stretch Factor: 1.97
+    Original SnugBox: (min_x=-149.46, min_y=-292.85, max_x=693.06, max_y=783.10)
+    DualBox (Left): (min_x=-149.46, min_y=-292.85, max_x=271.80, max_y=765.86)
+    DualBox (Right): (min_x=271.80, min_y=-275.61, max_x=693.06, max_y=783.10)
+    PASS: Complete coverage (1600 tiles)
 Coverage Completeness Test: PASSED
 
-=== Test 3: Overlapping Box Handling ===
+=== Test 3: Overlapping Box Handling (Randomized) ===
 Requirements: 5.1, 5.2, 5.3, 5.4 - Proper handling of overlapping regions
-  Test 1: Nearly circular ellipse with maximum overlap
-    t (for exp(-0.5 Q(x)) = threshold): 11.08
-    Computed Tilt Angle: -45.00 degrees
-    Original SnugBox: (min_x=-59.07, min_y=-59.07, max_x=259.07, max_y=259.07)
-    DualBox (Left): (min_x=-59.07, min_y=-59.07, max_x=100.00, max_y=100.00)
-    DualBox (Right): (min_x=100.00, min_y=100.00, max_x=259.07, max_y=259.07)
-    Box areas: Left=25302.0, Right=25302.0, Overlap=0.0
-    PASS: Overlapping region handled correctly (0 overlap tiles, 129 total tiles)
-  Test 2: Slightly tilted ellipse with moderate overlap
+  Test 1: Randomized Overlap Test (Angle: 300.5)
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -67.50 degrees
-    Original SnugBox: (min_x=-37.05, min_y=20.15, max_x=277.05, max_y=219.85)
-    DualBox (Left): (min_x=-37.05, min_y=20.15, max_x=242.15, max_y=120.00)
-    DualBox (Right): (min_x=-2.15, min_y=120.00, max_x=277.05, max_y=219.85)
-    Box areas: Left=27877.4, Right=27877.4, Overlap=0.0
-    PASS: Overlapping region handled correctly (0 overlap tiles, 222 total tiles)
-  Test 3: Horizontal ellipse at critical stretching angle
+    Ellipse Params: A=0.000543, B=0.000267, C=0.000248, opacity=1.000000
+    Computed Tilt Angle: 30.54 degrees
+    Eccentricity: 0.933407
+    Original SnugBox: (min_x=-120.75, min_y=-49.71, max_x=296.00, max_y=567.14)
+    DualBox (Left): (min_x=-120.75, min_y=-49.71, max_x=87.63, max_y=470.07)
+    DualBox (Right): (min_x=87.63, min_y=47.35, max_x=296.00, max_y=567.14)
+    Box areas: Left=108311.7, Right=108311.7, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 544 total tiles)
+  Test 2: Randomized Overlap Test (Angle: 226.0)
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -90.00 degrees
-    Original SnugBox: (min_x=-86.45, min_y=24.52, max_x=246.45, max_y=135.48)
-    DualBox (Left): (min_x=-86.45, min_y=24.52, max_x=263.10, max_y=80.00)
-    DualBox (Right): (min_x=-103.10, min_y=80.00, max_x=246.45, max_y=135.48)
-    Box areas: Left=19394.4, Right=19394.4, Overlap=0.0
-    PASS: Overlapping region handled correctly (0 overlap tiles, 96 total tiles)
-  Test 4: Large ellipse with significant overlap
+    Ellipse Params: A=0.000313, B=-0.000221, C=0.000297, opacity=1.000000
+    Computed Tilt Angle: -43.97 degrees
+    Eccentricity: 0.916929
+    Original SnugBox: (min_x=-106.97, min_y=-129.26, max_x=439.44, max_y=431.52)
+    DualBox (Left): (min_x=-106.97, min_y=-129.26, max_x=166.23, max_y=344.24)
+    DualBox (Right): (min_x=166.23, min_y=-41.98, max_x=439.44, max_y=431.52)
+    Box areas: Left=129360.0, Right=129360.0, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 706 total tiles)
+  Test 3: Randomized Overlap Test (Angle: 219.3)
     t (for exp(-0.5 Q(x)) = threshold): 11.1
-    Computed Tilt Angle: -30.00 degrees
-    Original SnugBox: (min_x=98.75, min_y=52.05, max_x=301.25, max_y=347.95)
-    DualBox (Left): (min_x=98.75, min_y=52.05, max_x=200.00, max_y=281.37)
-    DualBox (Right): (min_x=200.00, min_y=118.63, max_x=301.25, max_y=347.95)
-    Box areas: Left=23218.0, Right=23218.0, Overlap=0.0
-    PASS: Overlapping region handled correctly (0 overlap tiles, 199 total tiles)
+    Ellipse Params: A=0.000166, B=-0.000117, C=0.000213, opacity=1.000000
+    Computed Tilt Angle: -50.67 degrees
+    Eccentricity: 0.879609
+    Original SnugBox: (min_x=-87.62, min_y=-113.81, max_x=573.98, max_y=470.17)
+    DualBox (Left): (min_x=-87.62, min_y=-113.81, max_x=501.83, max_y=178.18)
+    DualBox (Right): (min_x=-15.47, min_y=178.18, max_x=573.98, max_y=470.17)
+    Box areas: Left=172113.9, Right=172113.9, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 900 total tiles)
+  Test 4: Randomized Overlap Test (Angle: 101.7)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000432, B=0.000080, C=0.000064, opacity=1.000000
+    Computed Tilt Angle: 11.72 degrees
+    Eccentricity: 0.946136
+    Original SnugBox: (min_x=67.63, min_y=-346.51, max_x=433.25, max_y=606.41)
+    DualBox (Left): (min_x=67.63, min_y=-346.51, max_x=250.44, max_y=547.43)
+    DualBox (Right): (min_x=250.44, min_y=-287.54, max_x=433.25, max_y=606.41)
+    Box areas: Left=163422.1, Right=163422.1, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 720 total tiles)
+  Test 5: Randomized Overlap Test (Angle: 345.8)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000113, B=0.000184, C=0.000795, opacity=1.000000
+    Computed Tilt Angle: 75.79 degrees
+    Eccentricity: 0.959805
+    Original SnugBox: (min_x=-125.73, min_y=32.79, max_x=669.07, max_y=332.48)
+    DualBox (Left): (min_x=-125.73, min_y=32.79, max_x=584.85, max_y=182.64)
+    DualBox (Right): (min_x=-41.51, min_y=182.64, max_x=669.07, max_y=332.48)
+    Box areas: Left=106478.8, Right=106478.8, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 570 total tiles)
+  Test 6: Randomized Overlap Test (Angle: 191.7)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000089, B=-0.000023, C=0.000196, opacity=1.000000
+    Computed Tilt Angle: -78.25 degrees
+    Eccentricity: 0.761389
+    Original SnugBox: (min_x=-225.33, min_y=-118.71, max_x=489.92, max_y=363.89)
+    DualBox (Left): (min_x=-225.33, min_y=-118.71, max_x=484.37, max_y=122.59)
+    DualBox (Right): (min_x=-219.78, min_y=122.59, max_x=489.92, max_y=363.89)
+    Box areas: Left=171248.5, Right=171248.5, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 690 total tiles)
+  Test 7: Randomized Overlap Test (Angle: 344.7)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000093, B=0.000173, C=0.000677, opacity=1.000000
+    Computed Tilt Angle: 74.69 degrees
+    Eccentricity: 0.967618
+    Original SnugBox: (min_x=-297.71, min_y=115.68, max_x=649.63, max_y=467.60)
+    DualBox (Left): (min_x=-297.71, min_y=115.68, max_x=520.29, max_y=291.64)
+    DualBox (Right): (min_x=-168.37, min_y=291.64, max_x=649.63, max_y=467.60)
+    Box areas: Left=143934.4, Right=143934.4, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 690 total tiles)
+  Test 8: Randomized Overlap Test (Angle: 184.3)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000103, B=-0.000088, C=0.001252, opacity=1.000000
+    Computed Tilt Angle: -85.66 degrees
+    Eccentricity: 0.961110
+    Original SnugBox: (min_x=-207.51, min_y=96.79, max_x=470.14, max_y=290.83)
+    DualBox (Left): (min_x=-207.51, min_y=96.79, max_x=459.84, max_y=193.81)
+    DualBox (Right): (min_x=-197.20, min_y=193.81, max_x=470.14, max_y=290.83)
+    Box areas: Left=64747.0, Right=64747.0, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 384 total tiles)
+  Test 9: Randomized Overlap Test (Angle: 229.3)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000103, B=-0.000013, C=0.000099, opacity=1.000000
+    Computed Tilt Angle: -40.74 degrees
+    Eccentricity: 0.483201
+    Original SnugBox: (min_x=-59.07, min_y=-147.81, max_x=603.62, max_y=527.99)
+    DualBox (Left): (min_x=-59.07, min_y=-147.81, max_x=272.27, max_y=525.09)
+    DualBox (Right): (min_x=272.27, min_y=-144.91, max_x=603.62, max_y=527.99)
+    Box areas: Left=222959.7, Right=222959.7, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 900 total tiles)
+  Test 10: Randomized Overlap Test (Angle: 50.7)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000954, B=-0.000720, C=0.000666, opacity=1.000000
+    Computed Tilt Angle: -39.33 degrees
+    Eccentricity: 0.975087
+    Original SnugBox: (min_x=-108.77, min_y=-15.20, max_x=392.82, max_y=585.30)
+    DualBox (Left): (min_x=-108.77, min_y=-15.20, max_x=142.03, max_y=414.07)
+    DualBox (Right): (min_x=142.03, min_y=156.03, max_x=392.82, max_y=585.30)
+    Box areas: Left=107658.1, Right=107658.1, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 574 total tiles)
+  Test 11: Randomized Overlap Test (Angle: 239.3)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000656, B=-0.000360, C=0.000262, opacity=1.000000
+    Computed Tilt Angle: -30.65 degrees
+    Eccentricity: 0.971517
+    Original SnugBox: (min_x=-88.81, min_y=-298.21, max_x=434.47, max_y=529.66)
+    DualBox (Left): (min_x=-88.81, min_y=-298.21, max_x=172.83, max_y=321.36)
+    DualBox (Right): (min_x=172.83, min_y=-89.92, max_x=434.47, max_y=529.66)
+    Box areas: Left=162106.8, Right=162106.8, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 750 total tiles)
+  Test 12: Randomized Overlap Test (Angle: 302.0)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000580, B=0.000318, C=0.000271, opacity=1.000000
+    Computed Tilt Angle: 32.04 degrees
+    Eccentricity: 0.952849
+    Original SnugBox: (min_x=-113.57, min_y=-41.23, max_x=349.97, max_y=637.18)
+    DualBox (Left): (min_x=-113.57, min_y=-41.23, max_x=118.20, max_y=500.32)
+    DualBox (Right): (min_x=118.20, min_y=95.64, max_x=349.97, max_y=637.18)
+    Box areas: Left=125514.7, Right=125514.7, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 590 total tiles)
+  Test 13: Randomized Overlap Test (Angle: 62.2)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000300, B=-0.000110, C=0.000148, opacity=1.000000
+    Computed Tilt Angle: -27.76 degrees
+    Eccentricity: 0.864797
+    Original SnugBox: (min_x=-29.29, min_y=-191.85, max_x=421.58, max_y=449.26)
+    DualBox (Left): (min_x=-29.29, min_y=-191.85, max_x=196.15, max_y=401.90)
+    DualBox (Right): (min_x=196.15, min_y=-144.49, max_x=421.58, max_y=449.26)
+    Box areas: Left=133851.6, Right=133851.6, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 747 total tiles)
+  Test 14: Randomized Overlap Test (Angle: 237.0)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000498, B=-0.000270, C=0.000257, opacity=1.000000
+    Computed Tilt Angle: -33.02 degrees
+    Eccentricity: 0.937570
+    Original SnugBox: (min_x=42.71, min_y=-1.42, max_x=498.69, max_y=632.75)
+    DualBox (Left): (min_x=42.71, min_y=-1.42, max_x=270.70, max_y=523.23)
+    DualBox (Right): (min_x=270.70, min_y=108.10, max_x=498.69, max_y=632.75)
+    Box areas: Left=119615.3, Right=119615.3, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 762 total tiles)
+  Test 15: Randomized Overlap Test (Angle: 356.7)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000051, B=0.000003, C=0.000108, opacity=1.000000
+    Computed Tilt Angle: 86.70 degrees
+    Eccentricity: 0.728266
+    Original SnugBox: (min_x=-227.41, min_y=-149.98, max_x=705.57, max_y=491.14)
+    DualBox (Left): (min_x=-227.41, min_y=-149.98, max_x=705.11, max_y=170.58)
+    DualBox (Right): (min_x=-226.95, min_y=170.58, max_x=705.57, max_y=491.14)
+    Box areas: Left=298931.9, Right=298931.9, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 900 total tiles)
+  Test 16: Randomized Overlap Test (Angle: 96.3)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000607, B=0.000060, C=0.000070, opacity=1.000000
+    Computed Tilt Angle: 6.28 degrees
+    Eccentricity: 0.946943
+    Original SnugBox: (min_x=-47.04, min_y=-237.83, max_x=235.31, max_y=593.77)
+    DualBox (Left): (min_x=-47.04, min_y=-237.83, max_x=94.14, max_y=575.84)
+    DualBox (Right): (min_x=94.14, min_y=-219.90, max_x=235.31, max_y=593.77)
+    Box areas: Left=114870.8, Right=114870.8, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 450 total tiles)
+  Test 17: Randomized Overlap Test (Angle: 256.0)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000613, B=-0.000130, C=0.000125, opacity=1.000000
+    Computed Tilt Angle: -14.01 degrees
+    Eccentricity: 0.925000
+    Original SnugBox: (min_x=162.22, min_y=-44.39, max_x=466.49, max_y=628.04)
+    DualBox (Left): (min_x=162.22, min_y=-44.39, max_x=314.35, max_y=589.05)
+    DualBox (Right): (min_x=314.35, min_y=-5.40, max_x=466.49, max_y=628.04)
+    Box areas: Left=96369.7, Right=96369.7, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 600 total tiles)
+  Test 18: Randomized Overlap Test (Angle: 83.9)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000778, B=-0.000077, C=0.000059, opacity=1.000000
+    Computed Tilt Angle: -6.08 degrees
+    Eccentricity: 0.967113
+    Original SnugBox: (min_x=152.00, min_y=-234.17, max_x=408.01, max_y=694.60)
+    DualBox (Left): (min_x=152.00, min_y=-234.17, max_x=280.01, max_y=663.27)
+    DualBox (Right): (min_x=280.01, min_y=-202.84, max_x=408.01, max_y=694.60)
+    Box areas: Left=114874.7, Right=114874.7, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 510 total tiles)
+  Test 19: Randomized Overlap Test (Angle: 255.7)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000823, B=-0.000196, C=0.000105, opacity=1.000000
+    Computed Tilt Angle: -14.32 degrees
+    Eccentricity: 0.967987
+    Original SnugBox: (min_x=-61.19, min_y=-132.72, max_x=250.27, max_y=739.16)
+    DualBox (Left): (min_x=-61.19, min_y=-132.72, max_x=94.54, max_y=628.15)
+    DualBox (Right): (min_x=94.54, min_y=-21.70, max_x=250.27, max_y=739.16)
+    Box areas: Left=118489.3, Right=118489.3, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 480 total tiles)
+  Test 20: Randomized Overlap Test (Angle: 28.8)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000461, B=-0.000689, C=0.001338, opacity=1.000000
+    Computed Tilt Angle: -61.24 degrees
+    Eccentricity: 0.975424
+    Original SnugBox: (min_x=-219.28, min_y=88.14, max_x=424.87, max_y=466.28)
+    DualBox (Left): (min_x=-219.28, min_y=88.14, max_x=257.81, max_y=277.21)
+    DualBox (Right): (min_x=-52.22, min_y=277.21, max_x=424.87, max_y=466.28)
+    Box areas: Left=90203.8, Right=90203.8, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 555 total tiles)
+  Test 21: Randomized Overlap Test (Angle: 164.3)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000170, B=0.000377, C=0.001409, opacity=1.000000
+    Computed Tilt Angle: 74.34 degrees
+    Eccentricity: 0.978520
+    Original SnugBox: (min_x=-173.97, min_y=-32.87, max_x=626.40, max_y=245.18)
+    DualBox (Left): (min_x=-173.97, min_y=-32.87, max_x=481.49, max_y=106.15)
+    DualBox (Right): (min_x=-29.06, min_y=106.15, max_x=626.40, max_y=245.18)
+    Box areas: Left=91127.3, Right=91127.3, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 480 total tiles)
+  Test 22: Randomized Overlap Test (Angle: 39.8)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000168, B=-0.000088, C=0.000201, opacity=1.000000
+    Computed Tilt Angle: -50.23 degrees
+    Eccentricity: 0.808580
+    Original SnugBox: (min_x=23.88, min_y=-29.90, max_x=608.57, max_y=505.30)
+    DualBox (Left): (min_x=23.88, min_y=-29.90, max_x=572.78, max_y=237.70)
+    DualBox (Right): (min_x=59.68, min_y=237.70, max_x=608.57, max_y=505.30)
+    Box areas: Left=146886.9, Right=146886.9, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 840 total tiles)
+  Test 23: Randomized Overlap Test (Angle: 97.8)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000907, B=0.000117, C=0.000064, opacity=1.000000
+    Computed Tilt Angle: 7.76 degrees
+    Eccentricity: 0.973850
+    Original SnugBox: (min_x=167.88, min_y=-358.63, max_x=421.07, max_y=597.46)
+    DualBox (Left): (min_x=167.88, min_y=-358.63, max_x=294.47, max_y=536.77)
+    DualBox (Right): (min_x=294.47, min_y=-297.93, max_x=421.07, max_y=597.46)
+    Box areas: Left=113352.8, Right=113352.8, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 510 total tiles)
+  Test 24: Randomized Overlap Test (Angle: 353.2)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000060, B=0.000011, C=0.000153, opacity=1.000000
+    Computed Tilt Angle: 83.21 degrees
+    Eccentricity: 0.785599
+    Original SnugBox: (min_x=-275.03, min_y=-27.92, max_x=587.36, max_y=514.00)
+    DualBox (Left): (min_x=-275.03, min_y=-27.92, max_x=584.43, max_y=243.04)
+    DualBox (Right): (min_x=-272.10, min_y=243.04, max_x=587.36, max_y=514.00)
+    Box areas: Left=232879.8, Right=232879.8, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 900 total tiles)
+  Test 25: Randomized Overlap Test (Angle: 110.7)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000408, B=0.000128, C=0.000117, opacity=1.000000
+    Computed Tilt Angle: 20.67 degrees
+    Eccentricity: 0.922328
+    Original SnugBox: (min_x=-62.08, min_y=-221.75, max_x=345.34, max_y=540.63)
+    DualBox (Left): (min_x=-62.08, min_y=-221.75, max_x=141.63, max_y=467.74)
+    DualBox (Right): (min_x=141.63, min_y=-148.86, max_x=345.34, max_y=540.63)
+    Box areas: Left=140458.3, Right=140458.3, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 660 total tiles)
+  Test 26: Randomized Overlap Test (Angle: 197.8)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000093, B=-0.000140, C=0.000483, opacity=1.000000
+    Computed Tilt Angle: -72.19 degrees
+    Eccentricity: 0.953430
+    Original SnugBox: (min_x=-356.67, min_y=67.55, max_x=562.40, max_y=470.68)
+    DualBox (Left): (min_x=-356.67, min_y=67.55, max_x=448.23, max_y=269.12)
+    DualBox (Right): (min_x=-242.49, min_y=269.12, max_x=562.40, max_y=470.68)
+    Box areas: Left=162241.2, Right=162241.2, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 768 total tiles)
+  Test 27: Randomized Overlap Test (Angle: 287.3)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000100, B=0.000007, C=0.000080, opacity=1.000000
+    Computed Tilt Angle: 17.27 degrees
+    Eccentricity: 0.488891
+    Original SnugBox: (min_x=-95.96, min_y=-74.88, max_x=571.93, max_y=672.36)
+    DualBox (Left): (min_x=-95.96, min_y=-74.88, max_x=237.99, max_y=671.24)
+    DualBox (Right): (min_x=237.99, min_y=-73.76, max_x=571.93, max_y=672.36)
+    Box areas: Left=249165.7, Right=249165.7, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 900 total tiles)
+  Test 28: Randomized Overlap Test (Angle: 316.0)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000902, B=0.000848, C=0.000961, opacity=1.000000
+    Computed Tilt Angle: 45.99 degrees
+    Eccentricity: 0.976260
+    Original SnugBox: (min_x=-183.87, min_y=44.85, max_x=351.48, max_y=563.57)
+    DualBox (Left): (min_x=-183.87, min_y=44.85, max_x=194.62, max_y=304.21)
+    DualBox (Right): (min_x=-27.01, min_y=304.21, max_x=351.48, max_y=563.57)
+    Box areas: Left=98165.1, Right=98165.0, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 463 total tiles)
+  Test 29: Randomized Overlap Test (Angle: 307.3)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000341, B=0.000217, C=0.000221, opacity=1.000000
+    Computed Tilt Angle: 37.33 degrees
+    Eccentricity: 0.943190
+    Original SnugBox: (min_x=-57.90, min_y=-276.30, max_x=531.23, max_y=454.38)
+    DualBox (Left): (min_x=-57.90, min_y=-276.30, max_x=236.66, max_y=312.77)
+    DualBox (Right): (min_x=236.66, min_y=-134.68, max_x=531.23, max_y=454.38)
+    Box areas: Left=173517.8, Right=173517.8, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 744 total tiles)
+  Test 30: Randomized Overlap Test (Angle: 81.6)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000435, B=-0.000052, C=0.000091, opacity=1.000000
+    Computed Tilt Angle: -8.36 degrees
+    Eccentricity: 0.900981
+    Original SnugBox: (min_x=50.06, min_y=-79.39, max_x=380.78, max_y=644.04)
+    DualBox (Left): (min_x=50.06, min_y=-79.39, max_x=215.42, max_y=631.61)
+    DualBox (Right): (min_x=215.42, min_y=-66.96, max_x=380.78, max_y=644.04)
+    Box areas: Left=117568.3, Right=117568.2, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 630 total tiles)
+  Test 31: Randomized Overlap Test (Angle: 213.9)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000282, B=-0.000337, C=0.000558, opacity=1.000000
+    Computed Tilt Angle: -56.13 degrees
+    Eccentricity: 0.963888
+    Original SnugBox: (min_x=-107.74, min_y=-35.75, max_x=645.03, max_y=499.32)
+    DualBox (Left): (min_x=-107.74, min_y=-35.75, max_x=466.85, max_y=231.78)
+    DualBox (Right): (min_x=70.44, min_y=231.78, max_x=645.03, max_y=499.32)
+    Box areas: Left=153722.9, Right=153722.9, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 840 total tiles)
+  Test 32: Randomized Overlap Test (Angle: 240.0)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.001184, B=-0.000644, C=0.000440, opacity=1.000000
+    Computed Tilt Angle: -29.99 degrees
+    Eccentricity: 0.977692
+    Original SnugBox: (min_x=43.13, min_y=-270.12, max_x=470.69, max_y=431.07)
+    DualBox (Left): (min_x=43.13, min_y=-270.12, max_x=256.91, max_y=239.15)
+    DualBox (Right): (min_x=256.91, min_y=-78.20, max_x=470.69, max_y=431.07)
+    Box areas: Left=108870.0, Right=108870.0, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 588 total tiles)
+  Test 33: Randomized Overlap Test (Angle: 268.1)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000386, B=-0.000010, C=0.000090, opacity=1.000000
+    Computed Tilt Angle: -1.85 degrees
+    Eccentricity: 0.875798
+    Original SnugBox: (min_x=-38.89, min_y=-152.42, max_x=300.56, max_y=549.36)
+    DualBox (Left): (min_x=-38.89, min_y=-152.42, max_x=130.83, max_y=548.90)
+    DualBox (Right): (min_x=130.83, min_y=-151.95, max_x=300.56, max_y=549.36)
+    Box areas: Left=119030.3, Right=119030.3, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 570 total tiles)
+  Test 34: Randomized Overlap Test (Angle: 269.6)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.001022, B=-0.000006, C=0.000051, opacity=1.000000
+    Computed Tilt Angle: -0.36 degrees
+    Eccentricity: 0.974773
+    Original SnugBox: (min_x=-19.80, min_y=-367.97, max_x=188.57, max_y=565.22)
+    DualBox (Left): (min_x=-19.80, min_y=-367.97, max_x=84.38, max_y=565.05)
+    DualBox (Right): (min_x=84.38, min_y=-367.81, max_x=188.57, max_y=565.22)
+    Box areas: Left=97208.0, Right=97208.0, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 360 total tiles)
+  Test 35: Randomized Overlap Test (Angle: 65.8)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.001445, B=-0.000608, C=0.000362, opacity=1.000000
+    Computed Tilt Angle: -24.15 degrees
+    Eccentricity: 0.973565
+    Original SnugBox: (min_x=-26.79, min_y=-37.76, max_x=296.19, max_y=607.34)
+    DualBox (Left): (min_x=-26.79, min_y=-37.76, max_x=134.70, max_y=459.70)
+    DualBox (Right): (min_x=134.70, min_y=109.88, max_x=296.19, max_y=607.34)
+    Box areas: Left=80334.0, Right=80334.0, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 502 total tiles)
+  Test 36: Randomized Overlap Test (Angle: 45.8)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000070, B=-0.000017, C=0.000069, opacity=1.000000
+    Computed Tilt Angle: -44.23 degrees
+    Eccentricity: 0.630964
+    Original SnugBox: (min_x=-210.57, min_y=-187.74, max_x=610.30, max_y=638.60)
+    DualBox (Left): (min_x=-210.57, min_y=-187.74, max_x=199.86, max_y=625.65)
+    DualBox (Right): (min_x=199.86, min_y=-174.79, max_x=610.30, max_y=638.60)
+    Box areas: Left=333843.3, Right=333843.2, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 900 total tiles)
+  Test 37: Randomized Overlap Test (Angle: 181.1)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000052, B=-0.000003, C=0.000182, opacity=1.000000
+    Computed Tilt Angle: -88.89 degrees
+    Eccentricity: 0.843919
+    Original SnugBox: (min_x=-234.42, min_y=-83.60, max_x=685.85, max_y=410.39)
+    DualBox (Left): (min_x=-234.42, min_y=-83.60, max_x=685.70, max_y=163.39)
+    DualBox (Right): (min_x=-234.26, min_y=163.39, max_x=685.85, max_y=410.39)
+    Box areas: Left=227264.7, Right=227264.7, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 780 total tiles)
+  Test 38: Randomized Overlap Test (Angle: 271.0)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.001098, B=0.000018, C=0.000049, opacity=1.000000
+    Computed Tilt Angle: 0.99 degrees
+    Eccentricity: 0.977421
+    Original SnugBox: (min_x=51.01, min_y=-341.24, max_x=252.60, max_y=609.62)
+    DualBox (Left): (min_x=51.01, min_y=-341.24, max_x=151.81, max_y=608.17)
+    DualBox (Right): (min_x=151.81, min_y=-339.79, max_x=252.60, max_y=609.62)
+    Box areas: Left=95696.6, Right=95696.5, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 390 total tiles)
+  Test 39: Randomized Overlap Test (Angle: 198.4)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000111, B=-0.000051, C=0.000247, opacity=1.000000
+    Computed Tilt Angle: -71.59 degrees
+    Eccentricity: 0.801055
+    Original SnugBox: (min_x=-208.72, min_y=0.31, max_x=453.98, max_y=445.43)
+    DualBox (Left): (min_x=-208.72, min_y=0.31, max_x=438.11, max_y=222.87)
+    DualBox (Right): (min_x=-192.84, min_y=222.87, max_x=453.98, max_y=445.43)
+    Box areas: Left=143956.7, Right=143956.7, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 799 total tiles)
+  Test 40: Randomized Overlap Test (Angle: 173.2)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000054, B=0.000065, C=0.000590, opacity=1.000000
+    Computed Tilt Angle: 83.21 degrees
+    Eccentricity: 0.960820
+    Original SnugBox: (min_x=-230.13, min_y=-52.64, max_x=745.90, max_y=241.62)
+    DualBox (Left): (min_x=-230.13, min_y=-52.64, max_x=712.40, max_y=94.49)
+    DualBox (Right): (min_x=-196.63, min_y=94.49, max_x=745.90, max_y=241.62)
+    Box areas: Left=138674.7, Right=138674.7, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 480 total tiles)
+  Test 41: Randomized Overlap Test (Angle: 35.6)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000138, B=-0.000092, C=0.000201, opacity=1.000000
+    Computed Tilt Angle: -54.39 degrees
+    Eccentricity: 0.852586
+    Original SnugBox: (min_x=-69.14, min_y=-35.89, max_x=608.48, max_y=526.74)
+    DualBox (Left): (min_x=-69.14, min_y=-35.89, max_x=552.64, max_y=245.42)
+    DualBox (Right): (min_x=-13.30, min_y=245.42, max_x=608.48, max_y=526.74)
+    Box areas: Left=174916.5, Right=174916.5, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 900 total tiles)
+  Test 42: Randomized Overlap Test (Angle: 280.7)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000225, B=0.000029, C=0.000076, opacity=1.000000
+    Computed Tilt Angle: 10.70 degrees
+    Eccentricity: 0.833609
+    Original SnugBox: (min_x=-147.16, min_y=-114.46, max_x=308.38, max_y=670.09)
+    DualBox (Left): (min_x=-147.16, min_y=-114.46, max_x=80.61, max_y=660.14)
+    DualBox (Right): (min_x=80.61, min_y=-104.51, max_x=308.38, max_y=670.09)
+    Box areas: Left=176431.4, Right=176431.4, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 600 total tiles)
+  Test 43: Randomized Overlap Test (Angle: 96.3)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000085, B=0.000003, C=0.000055, opacity=1.000000
+    Computed Tilt Angle: 6.32 degrees
+    Eccentricity: 0.597469
+    Original SnugBox: (min_x=-269.76, min_y=-267.76, max_x=453.20, max_y=628.85)
+    DualBox (Left): (min_x=-269.76, min_y=-267.76, max_x=91.72, max_y=628.32)
+    DualBox (Right): (min_x=91.72, min_y=-267.23, max_x=453.20, max_y=628.85)
+    Box areas: Left=323913.4, Right=323913.4, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 870 total tiles)
+  Test 44: Randomized Overlap Test (Angle: 325.4)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000134, B=0.000115, C=0.000220, opacity=1.000000
+    Computed Tilt Angle: 55.36 degrees
+    Eccentricity: 0.904464
+    Original SnugBox: (min_x=-255.84, min_y=-170.19, max_x=517.70, max_y=432.21)
+    DualBox (Left): (min_x=-255.84, min_y=-170.19, max_x=418.86, max_y=131.01)
+    DualBox (Right): (min_x=-157.01, min_y=131.01, max_x=517.70, max_y=432.21)
+    Box areas: Left=203221.7, Right=203221.7, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 816 total tiles)
+  Test 45: Randomized Overlap Test (Angle: 112.7)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000288, B=0.000091, C=0.000109, opacity=1.000000
+    Computed Tilt Angle: 22.69 degrees
+    Eccentricity: 0.884018
+    Original SnugBox: (min_x=-98.45, min_y=-259.22, max_x=358.15, max_y=482.62)
+    DualBox (Left): (min_x=-98.45, min_y=-259.22, max_x=129.85, max_y=430.47)
+    DualBox (Right): (min_x=129.85, min_y=-207.07, max_x=358.15, max_y=482.62)
+    Box areas: Left=157453.4, Right=157453.4, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 666 total tiles)
+  Test 46: Randomized Overlap Test (Angle: 38.5)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000390, B=-0.000409, C=0.000580, opacity=1.000000
+    Computed Tilt Angle: -51.55 degrees
+    Eccentricity: 0.963620
+    Original SnugBox: (min_x=-129.09, min_y=11.92, max_x=533.80, max_y=555.24)
+    DualBox (Left): (min_x=-129.09, min_y=11.92, max_x=371.00, max_y=283.58)
+    DualBox (Right): (min_x=33.71, min_y=283.58, max_x=533.80, max_y=555.24)
+    Box areas: Left=135856.2, Right=135856.2, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 774 total tiles)
+  Test 47: Randomized Overlap Test (Angle: 308.7)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000144, B=0.000036, C=0.000128, opacity=1.000000
+    Computed Tilt Angle: 38.67 degrees
+    Eccentricity: 0.649759
+    Original SnugBox: (min_x=-188.49, min_y=-37.29, max_x=385.39, max_y=571.28)
+    DualBox (Left): (min_x=-188.49, min_y=-37.29, max_x=98.45, max_y=560.69)
+    DualBox (Right): (min_x=98.45, min_y=-26.70, max_x=385.39, max_y=571.28)
+    Box areas: Left=171585.6, Right=171585.7, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 750 total tiles)
+  Test 48: Randomized Overlap Test (Angle: 190.1)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000084, B=-0.000159, C=0.000947, opacity=1.000000
+    Computed Tilt Angle: -79.87 degrees
+    Eccentricity: 0.971102
+    Original SnugBox: (min_x=-344.57, min_y=133.71, max_x=535.36, max_y=395.80)
+    DualBox (Left): (min_x=-344.57, min_y=133.71, max_x=458.52, max_y=264.75)
+    DualBox (Right): (min_x=-267.73, min_y=264.75, max_x=535.36, max_y=395.80)
+    Box areas: Left=105243.2, Right=105243.2, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 502 total tiles)
+  Test 49: Randomized Overlap Test (Angle: 154.8)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000294, B=0.000471, C=0.001074, opacity=1.000000
+    Computed Tilt Angle: 64.81 degrees
+    Eccentricity: 0.971557
+    Original SnugBox: (min_x=-272.02, min_y=95.86, max_x=439.21, max_y=468.14)
+    DualBox (Left): (min_x=-272.02, min_y=95.86, max_x=277.68, max_y=282.00)
+    DualBox (Right): (min_x=-110.48, min_y=282.00, max_x=439.21, max_y=468.14)
+    Box areas: Left=102319.9, Right=102319.9, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 580 total tiles)
+  Test 50: Randomized Overlap Test (Angle: 267.9)
+    t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000565, B=-0.000018, C=0.000064, opacity=1.000000
+    Computed Tilt Angle: -2.06 degrees
+    Eccentricity: 0.942338
+    Original SnugBox: (min_x=1.39, min_y=-100.91, max_x=282.82, max_y=735.24)
+    DualBox (Left): (min_x=1.39, min_y=-100.91, max_x=142.11, max_y=733.35)
+    DualBox (Right): (min_x=142.11, min_y=-99.02, max_x=282.82, max_y=735.24)
+    Box areas: Left=117390.9, Right=117390.9, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 540 total tiles)
 Overlapping Box Handling Test: PASSED
 
 === Test 4: Edge Cases and Boundary Conditions ===
 Testing edge cases for robust tile culling system
   Test 4.1: Ellipse at grid boundary
     t (for exp(-0.5 Q(x)) = threshold): 11.1
+    Ellipse Params: A=0.000400, B=-0.000000, C=0.001600, opacity=1.000000
     Computed Tilt Angle: -90.00 degrees
-    Stretch Factor: 2.10
+    Eccentricity: 0.866025
+    Stretch Factor: 2.00
     Original SnugBox: (min_x=-151.45, min_y=-68.23, max_x=181.45, max_y=98.23)
-    DualBox (Left): (min_x=-151.45, min_y=-68.23, max_x=198.10, max_y=15.00)
-    DualBox (Right): (min_x=-168.10, min_y=15.00, max_x=181.45, max_y=98.23)
+    DualBox (Left): (min_x=-151.45, min_y=-68.23, max_x=181.45, max_y=15.00)
+    DualBox (Right): (min_x=-151.45, min_y=15.00, max_x=181.45, max_y=98.23)
     PASS: Boundary case handled correctly
   Test 4.2: Very small ellipse
     t (for exp(-0.5 Q(x)) = threshold): 11.08
+    Ellipse Params: A=0.000400, B=0.000000, C=0.000400, opacity=1.000000
     Computed Tilt Angle: 0.00 degrees
-    Stretch Factor: 2.10
-    Original SnugBox: (min_x=99.67, min_y=99.67, max_x=100.33, max_y=100.33)
-    DualBox (Left): (min_x=99.67, min_y=99.67, max_x=100.37, max_y=100.00)
-    DualBox (Right): (min_x=99.63, min_y=100.00, max_x=100.33, max_y=100.33)
-    PASS: Small ellipse handled correctly (1 tiles)
+    Eccentricity: 0.000000
+    Stretch Factor: 1.00
+    Original SnugBox: (min_x=-66.45, min_y=-66.45, max_x=266.45, max_y=266.45)
+    DualBox (Left): (min_x=-66.45, min_y=-66.45, max_x=100.00, max_y=100.00)
+    DualBox (Right): (min_x=100.00, min_y=100.00, max_x=266.45, max_y=266.45)
+    PASS: Small ellipse handled correctly (169 tiles)
 Edge Cases Test: PASSED
 
 === Integration Test Summary ===

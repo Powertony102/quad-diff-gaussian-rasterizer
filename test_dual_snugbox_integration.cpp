@@ -6,6 +6,7 @@
 #include <map>
 #include <iomanip>
 #include <algorithm>
+#include <random>
 
 // CPU-compatible versions of CUDA functions for testing
 #define __host__
@@ -125,8 +126,47 @@ __host__ __device__ inline float computeTiltAngle(const float3& cov2d) {
     return 0.5f * atan2f(numerator, denominator);
 }
 
-__host__ __device__ inline float computeStretchingFactor(float theta, float beta = 1.1f) {
-    return 1.0f + beta * fabsf(cosf(2.0f * theta));
+__host__ __device__ inline float computeEccentricity(const float4& con_o) {
+    float A = con_o.x;
+    float B = con_o.y;
+    float C = con_o.z;
+
+    float diff_AC = A - C;
+    float term_under_sqrt = fmaf(diff_AC, diff_AC, 4.0f * B * B);
+    float term_sqrt = sqrtf(term_under_sqrt);
+    
+    float sum_AC = A + C;
+
+    float lambda_max = (sum_AC + term_sqrt) / 2.0f;
+    float lambda_min = (sum_AC - term_sqrt) / 2.0f;
+
+    if (lambda_max <= 1e-8f) {
+        return 0.0f;
+    }
+
+    float ratio = lambda_min / lambda_max;
+    ratio = fmaxf(0.0f, ratio);
+    
+    return sqrtf(1.0f - ratio);
+}
+
+__host__ __device__ inline float computeStretchingFactor(
+    float theta, 
+    float eccentricity)
+{
+    if (eccentricity < 1e-6f) {
+        return 1.0f;
+    }
+    if (eccentricity > 0.99999f) {
+        return 1.0f;
+    }
+    float sin_2theta = sinf(2.0f * theta);
+    float sin_2theta_sq = sin_2theta * sin_2theta;
+    float e_sq = eccentricity * eccentricity;
+    float e_4 = e_sq * e_sq;
+
+    float stretch_modifier = e_4 / (4.0f * (1.0f - e_sq));
+    return 1.0f / sqrtf(1.0f + sin_2theta_sq * stretch_modifier) + 1.0f;
 }
 
 __host__ __device__ inline ExtremePoints computeExtremePoints(
@@ -485,7 +525,7 @@ struct IntegrationTestCase {
 };
 
 // Helper function to create ellipse coefficients from angle and aspect ratio
-static float last_a = 0.0f, last_b = 0.0f, last_aspect = 0.0f;
+// static float last_a = 0.0f, last_b = 0.0f, last_aspect = 0.0f;
 float4 createEllipseCoefficients(float angle_rad, float aspect_ratio, float opacity = 1.0f, float a_major = 50.0f) {
     // Create ellipse with semi-axes a and b where aspect_ratio = a/b
     float a = fmaxf(a_major, 50.0f);  // Major axis length (主轴至少50)
@@ -493,9 +533,9 @@ float4 createEllipseCoefficients(float angle_rad, float aspect_ratio, float opac
     // Ensure minimum axis length for数值稳定
     b = fmaxf(b, 5.0f);
     a = fmaxf(a, b);  // Ensure a >= b
-    last_a = a;
-    last_b = b;
-    last_aspect = aspect_ratio;
+    // last_a = a;
+    // last_b = b;
+    // last_aspect = aspect_ratio;
 
     float cos_theta = cosf(angle_rad);
     float sin_theta = sinf(angle_rad);
@@ -533,41 +573,34 @@ float4 createEllipseCoefficients(float angle_rad, float aspect_ratio, float opac
 // Test 1: Verify no duplicate (tile_index, gaussian_index) pairs in output
 // Requirements: 5.1, 5.2, 5.3, 5.4
 bool testNoDuplicateTilePairs() {
-    std::cout << "\n=== Test 1: No Duplicate Tile Pairs ===\n";
+    std::cout << "\n=== Test 1: No Duplicate Tile Pairs (Randomized) ===\n";
     std::cout << "Requirements: 5.1, 5.2, 5.3, 5.4 - Unique tile intersection generation\n";
     
-    std::vector<IntegrationTestCase> test_cases = {
-        // Horizontal ellipse that should generate overlapping boxes
-        {{createEllipseCoefficients(0.0f, 3.0f, 1.0f, 100.0f), {100.0f, 100.0f}, 0.0f, "Horizontal ellipse"},
-         make_dim3(20, 20), "Horizontal ellipse overlap test"},
-        
-        // Vertical ellipse
-        {{createEllipseCoefficients(M_PI/2.0f, 3.0f, 1.0f, 100.0f), {100.0f, 100.0f}, 90.0f, "Vertical ellipse"},
-         make_dim3(20, 20), "Vertical ellipse overlap test"},
-        
-        // 45-degree tilted ellipse
-        {{createEllipseCoefficients(M_PI/4.0f, 2.0f, 1.0f, 100.0f), {100.0f, 100.0f}, 45.0f, "45-degree ellipse"},
-         make_dim3(20, 20), "45-degree ellipse overlap test"},
-        
-        // Large ellipse spanning many tiles
-        {{createEllipseCoefficients(M_PI/6.0f, 4.0f, 1.0f, 100.0f), {200.0f, 200.0f}, 30.0f, "Large ellipse"},
-         make_dim3(30, 30), "Large ellipse overlap test"},
-        
-        // Small ellipse with minimal overlap
-        {{make_float4(0.1f, 0.05f, 0.1f, 1.0f), {50.0f, 50.0f}, 0.0f, "Small ellipse"},
-         make_dim3(10, 10), "Small ellipse minimal overlap test"},
-    };
+    std::mt19937 gen(42); // Fixed seed for reproducibility
+    std::uniform_real_distribution<float> angle_dist(0.0f, 2.0f * M_PI);
+    std::uniform_real_distribution<float> aspect_dist(1.1f, 10.0f);
+    std::uniform_real_distribution<float> pos_dist(50.0f, 350.0f);
+    std::uniform_real_distribution<float> size_dist(50.0f, 150.0f);
     
     bool all_passed = true;
-    int test_count = 0;
+    int num_tests = 50;
     
-    for (const auto& test_case : test_cases) {
-        test_count++;
-        std::cout << "  Test " << test_count << ": " << test_case.test_name << std::endl;
+    for (int i = 0; i < num_tests; ++i) {
+        float angle_rad = angle_dist(gen);
+        IntegrationTestCase test_case = {
+            {createEllipseCoefficients(angle_rad, aspect_dist(gen), 1.0f, size_dist(gen)), 
+             {pos_dist(gen), pos_dist(gen)}, static_cast<float>(angle_rad * 180.0f/M_PI), "Random Ellipse"},
+            make_dim3(30, 30), "Randomized Overlap Test"
+        };
+        
+        std::cout << "  Test " << (i+1) << ": " << test_case.test_name << " (Angle: " << std::fixed << std::setprecision(1) << test_case.ellipse.angle_degrees << ")" << std::endl;
         // 输出椭圆参数
-        std::cout << "    Ellipse Center: (" << test_case.ellipse.center.x << ", " << test_case.ellipse.center.y << ")" << std::endl;
-        std::cout << "    Major Axis a: " << last_a << ", Minor Axis b: " << last_b << std::endl;
-        std::cout << "    Angle (deg): " << test_case.ellipse.angle_degrees << ", Aspect Ratio: " << last_aspect << std::endl;
+        std::cout << "    Ellipse Params: A=" << std::fixed << std::setprecision(6) << test_case.ellipse.con_o.x
+                  << ", B=" << std::fixed << std::setprecision(6) << test_case.ellipse.con_o.y
+                  << ", C=" << std::fixed << std::setprecision(6) << test_case.ellipse.con_o.z
+                  << ", opacity=" << std::fixed << std::setprecision(6) << test_case.ellipse.con_o.w << std::endl;
+        // std::cout << "    Major Axis a: " << last_a << ", Minor Axis b: " << last_b << std::endl;
+        // std::cout << "    Angle (deg): " << test_case.ellipse.angle_degrees << ", Aspect Ratio: " << last_aspect << std::endl;
         
         // Validate ellipse and compute parameters
         float disc;
@@ -596,7 +629,10 @@ bool testNoDuplicateTilePairs() {
         float theta = computeTiltAngle(cov2d);
         float theta_degrees = theta * 180.0f / M_PI;
         std::cout << "    Computed Tilt Angle: " << std::fixed << std::setprecision(2) << theta_degrees << " degrees" << std::endl;
-        float stretch_factor = computeStretchingFactor(theta, 1.1f);
+        
+        float eccentricity = computeEccentricity(test_case.ellipse.con_o);
+        std::cout << "    Eccentricity: " << std::fixed << std::setprecision(6) << eccentricity << std::endl;
+        float stretch_factor = computeStretchingFactor(theta, eccentricity);
         std::cout << "    Stretch Factor: " << std::fixed << std::setprecision(2) << stretch_factor << std::endl;
         
         DualBox dual_box = constructDualBoxes(extremes, test_case.ellipse.center, stretch_factor);
@@ -663,71 +699,70 @@ bool testNoDuplicateTilePairs() {
 // Test 2: Test coverage completeness for various ellipse orientations
 // Requirements: 5.1, 5.2, 5.3, 5.4
 bool testCoverageCompleteness() {
-    std::cout << "\n=== Test 2: Coverage Completeness ===\n";
+    std::cout << "\n=== Test 2: Coverage Completeness (Randomized) ===\n";
     std::cout << "Requirements: 5.1, 5.2, 5.3, 5.4 - Complete ellipse coverage verification\n";
     
-    // Test ellipses at different orientations
-    std::vector<float> test_angles = {
-        0.0f,           // Horizontal
-        M_PI/6.0f,      // 30 degrees
-        M_PI/4.0f,      // 45 degrees
-        M_PI/3.0f,      // 60 degrees
-        M_PI/2.0f,      // Vertical
-        2.0f*M_PI/3.0f, // 120 degrees
-        3.0f*M_PI/4.0f, // 135 degrees
-        5.0f*M_PI/6.0f  // 150 degrees
-    };
-    
-    std::vector<float> aspect_ratios = {1.5f, 2.0f, 3.0f, 4.0f};
+    std::mt19937 gen(43); // Different seed for variety
+    std::uniform_real_distribution<float> angle_dist(0.0f, 2.0f * M_PI);
+    std::uniform_real_distribution<float> aspect_dist(1.1f, 15.0f);
+    std::uniform_real_distribution<float> pos_dist(100.0f, 400.0f);
+    std::uniform_real_distribution<float> size_dist(75.0f, 200.0f);
     
     bool all_passed = true;
-    int test_count = 0;
+    int num_tests = 100;
     
-    for (float angle : test_angles) {
-        for (float aspect_ratio : aspect_ratios) {
-            test_count++;
-            float angle_degrees = angle * 180.0f / M_PI;
+    for (int i = 0; i < num_tests; ++i) {
+        float angle = angle_dist(gen);
+        float aspect_ratio = aspect_dist(gen);
+        float angle_degrees = static_cast<float>(angle * 180.0f / M_PI);
             
-            std::cout << "  Test " << test_count << ": Angle " << std::fixed << std::setprecision(1) 
-                      << angle_degrees << "°, Aspect " << aspect_ratio << std::endl;
+        std::cout << "  Test " << (i+1) << ": Angle " << std::fixed << std::setprecision(1) 
+                  << angle_degrees << "°, Aspect " << aspect_ratio << std::endl;
             
-            // Create test ellipse
-            float4 con_o = createEllipseCoefficients(angle, aspect_ratio);
-            float2 center = {150.0f, 150.0f};
-            dim3 grid = make_dim3(25, 25);
+        // Create test ellipse
+        float4 con_o = createEllipseCoefficients(angle, aspect_ratio, 1.0f, size_dist(gen));
+        float2 center = {pos_dist(gen), pos_dist(gen)};
+        dim3 grid = make_dim3(40, 40);
             
-            // Validate ellipse
-            float disc;
-            if (!isValidEllipse(con_o, disc) || !passesOpacityThreshold(con_o.w)) {
-                std::cout << "    SKIP: Invalid ellipse parameters" << std::endl;
-                continue;
-            }
+        // Validate ellipse
+        float disc;
+        if (!isValidEllipse(con_o, disc) || !passesOpacityThreshold(con_o.w)) {
+            std::cout << "    SKIP: Invalid ellipse parameters" << std::endl;
+            continue;
+        }
             
-            // Compute threshold parameter t for Gaussian cutoff
-            float threshold = 1.0f / 255.0f;
-            float t = -2.0f * logf(threshold);  // t = -2*ln(threshold) for the ellipse equation
+        // Compute threshold parameter t for Gaussian cutoff
+        float threshold = 1.0f / 255.0f;
+        float t = -2.0f * logf(threshold);  // t = -2*ln(threshold) for the ellipse equation
             
-            if (!isfinite(t) || t <= 0.0f) {
-                t = 5.0f;  // Reasonable default for most ellipses
-            }
-            // 输出 t
-            std::cout << "    t (for exp(-0.5 Q(x)) = threshold): " << t << std::endl;
+        if (!isfinite(t) || t <= 0.0f) {
+            t = 5.0f;  // Reasonable default for most ellipses
+        }
+        // 输出 t
+        std::cout << "    t (for exp(-0.5 Q(x)) = threshold): " << t << std::endl;
+        std::cout << "    Ellipse Params: A=" << std::fixed << std::setprecision(6) << con_o.x
+                      << ", B=" << std::fixed << std::setprecision(6) << con_o.y
+                      << ", C=" << std::fixed << std::setprecision(6) << con_o.z
+                      << ", opacity=" << std::fixed << std::setprecision(6) << con_o.w << std::endl;
             
-            // Compute dual boxes
-            ExtremePoints extremes = computeExtremePoints(con_o, disc, t, center);
-            float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
-            float theta = computeTiltAngle(cov2d);
-            float theta_degrees = theta * 180.0f / M_PI;
-            std::cout << "    Computed Tilt Angle: " << std::fixed << std::setprecision(2) << theta_degrees << " degrees" << std::endl;
-            float stretch_factor = computeStretchingFactor(theta, 1.1f);
-            std::cout << "    Stretch Factor: " << std::fixed << std::setprecision(2) << stretch_factor << std::endl;
+        // Compute dual boxes
+        ExtremePoints extremes = computeExtremePoints(con_o, disc, t, center);
+        float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
+        float theta = computeTiltAngle(cov2d);
+        float theta_degrees = theta * 180.0f / M_PI;
+        std::cout << "    Computed Tilt Angle: " << std::fixed << std::setprecision(2) << theta_degrees << " degrees" << std::endl;
             
-            DualBox dual_box = constructDualBoxes(extremes, center, stretch_factor);
+        float eccentricity = computeEccentricity(con_o);
+        std::cout << "    Eccentricity: " << std::fixed << std::setprecision(6) << eccentricity << std::endl;
+        float stretch_factor = computeStretchingFactor(theta, eccentricity);
+        std::cout << "    Stretch Factor: " << std::fixed << std::setprecision(2) << stretch_factor << std::endl;
             
-            if (!dual_box.valid) {
-                std::cout << "    SKIP: Failed to construct valid dual boxes" << std::endl;
-                continue;
-            }
+        DualBox dual_box = constructDualBoxes(extremes, center, stretch_factor);
+            
+        if (!dual_box.valid) {
+            std::cout << "    SKIP: Failed to construct valid dual boxes" << std::endl;
+            continue;
+        }
 
             // Print box coordinates
             float4 original_snugbox = make_float4(
@@ -816,8 +851,6 @@ bool testCoverageCompleteness() {
                 all_passed = false;
             }
         }
-    }
-    
     std::cout << "Coverage Completeness Test: " << (all_passed ? "PASSED" : "FAILED") << std::endl;
     return all_passed;
 }
@@ -825,35 +858,28 @@ bool testCoverageCompleteness() {
 // Test 3: Validate proper handling of overlapping box regions
 // Requirements: 5.1, 5.2, 5.3, 5.4
 bool testOverlappingBoxHandling() {
-    std::cout << "\n=== Test 3: Overlapping Box Handling ===\n";
+    std::cout << "\n=== Test 3: Overlapping Box Handling (Randomized) ===\n";
     std::cout << "Requirements: 5.1, 5.2, 5.3, 5.4 - Proper handling of overlapping regions\n";
     
-    // Test cases designed to create significant box overlap
-    std::vector<IntegrationTestCase> test_cases = {
-        // Nearly circular ellipse (minimal stretching, maximum overlap)
-        {{createEllipseCoefficients(M_PI/4.0f, 1.1f), {100.0f, 100.0f}, 45.0f, "Nearly circular"},
-         make_dim3(15, 15), "Nearly circular ellipse with maximum overlap"},
-        
-        // Slightly tilted ellipse (moderate overlap)
-        {{createEllipseCoefficients(M_PI/8.0f, 2.0f), {120.0f, 120.0f}, 22.5f, "Slightly tilted"},
-         make_dim3(20, 20), "Slightly tilted ellipse with moderate overlap"},
-        
-        // Ellipse at critical angle for stretching
-        {{createEllipseCoefficients(0.0f, 3.0f), {80.0f, 80.0f}, 0.0f, "Horizontal critical"},
-         make_dim3(12, 12), "Horizontal ellipse at critical stretching angle"},
-        
-        // Large ellipse with significant overlap region
-        {{createEllipseCoefficients(M_PI/3.0f, 2.5f), {200.0f, 200.0f}, 60.0f, "Large overlapping"},
-         make_dim3(30, 30), "Large ellipse with significant overlap"},
-    };
-    
+    std::mt19937 gen(44); // Yet another seed
+    std::uniform_real_distribution<float> angle_dist(0.0f, 2.0f * M_PI);
+    std::uniform_real_distribution<float> aspect_dist(1.1f, 5.0f); // Moderate aspect ratio for overlap
+    std::uniform_real_distribution<float> pos_dist(80.0f, 320.0f);
+    std::uniform_real_distribution<float> size_dist(100.0f, 150.0f);
+
     bool all_passed = true;
-    int test_count = 0;
+    int num_tests = 50;
     
-    for (const auto& test_case : test_cases) {
-        test_count++;
-        std::cout << "  Test " << test_count << ": " << test_case.test_name << std::endl;
-        
+    for (int i = 0; i < num_tests; ++i) {
+        float angle_rad = angle_dist(gen);
+        IntegrationTestCase test_case = {
+            {createEllipseCoefficients(angle_rad, aspect_dist(gen), 1.0f, size_dist(gen)),
+             {pos_dist(gen), pos_dist(gen)}, static_cast<float>(angle_rad * 180.0f / M_PI), "Random Overlap"},
+            make_dim3(30, 30), "Randomized Overlap Test"
+        };
+
+        std::cout << "  Test " << (i+1) << ": " << test_case.test_name << " (Angle: " << std::fixed << std::setprecision(1) << test_case.ellipse.angle_degrees << ")" << std::endl;
+
         // Validate ellipse
         float disc;
         if (!isValidEllipse(test_case.ellipse.con_o, disc) || 
@@ -871,6 +897,10 @@ bool testOverlappingBoxHandling() {
         }
         // 输出 t
         std::cout << "    t (for exp(-0.5 Q(x)) = threshold): " << t << std::endl;
+        std::cout << "    Ellipse Params: A=" << std::fixed << std::setprecision(6) << test_case.ellipse.con_o.x
+                  << ", B=" << std::fixed << std::setprecision(6) << test_case.ellipse.con_o.y
+                  << ", C=" << std::fixed << std::setprecision(6) << test_case.ellipse.con_o.z
+                  << ", opacity=" << std::fixed << std::setprecision(6) << test_case.ellipse.con_o.w << std::endl;
         
         // Compute dual boxes
         ExtremePoints extremes = computeExtremePoints(test_case.ellipse.con_o, disc, t, test_case.ellipse.center);
@@ -878,7 +908,10 @@ bool testOverlappingBoxHandling() {
         float theta = computeTiltAngle(cov2d);
         float theta_degrees = theta * 180.0f / M_PI;
         std::cout << "    Computed Tilt Angle: " << std::fixed << std::setprecision(2) << theta_degrees << " degrees" << std::endl;
-        float stretch_factor = computeStretchingFactor(theta, 1.1f);
+        
+        float eccentricity = computeEccentricity(test_case.ellipse.con_o);
+        std::cout << "    Eccentricity: " << std::fixed << std::setprecision(6) << eccentricity << std::endl;
+        float stretch_factor = computeStretchingFactor(theta, eccentricity);
         
         DualBox dual_box = constructDualBoxes(extremes, test_case.ellipse.center, stretch_factor);
         
@@ -1004,12 +1037,19 @@ bool testEdgeCases() {
             }
             // 输出 t
             std::cout << "    t (for exp(-0.5 Q(x)) = threshold): " << t << std::endl;
+            std::cout << "    Ellipse Params: A=" << std::fixed << std::setprecision(6) << con_o.x
+                      << ", B=" << std::fixed << std::setprecision(6) << con_o.y
+                      << ", C=" << std::fixed << std::setprecision(6) << con_o.z
+                      << ", opacity=" << std::fixed << std::setprecision(6) << con_o.w << std::endl;
             ExtremePoints extremes = computeExtremePoints(con_o, disc, t, center);
             float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
             float theta = computeTiltAngle(cov2d);
             float theta_degrees = theta * 180.0f / M_PI;
             std::cout << "    Computed Tilt Angle: " << std::fixed << std::setprecision(2) << theta_degrees << " degrees" << std::endl;
-            float stretch_factor = computeStretchingFactor(theta, 1.1f);
+            
+            float eccentricity = computeEccentricity(con_o);
+            std::cout << "    Eccentricity: " << std::fixed << std::setprecision(6) << eccentricity << std::endl;
+            float stretch_factor = computeStretchingFactor(theta, eccentricity);
             std::cout << "    Stretch Factor: " << std::fixed << std::setprecision(2) << stretch_factor << std::endl;
             
             DualBox dual_box = constructDualBoxes(extremes, center, stretch_factor);
@@ -1061,7 +1101,8 @@ bool testEdgeCases() {
     {
         std::cout << "  Test 4.2: Very small ellipse" << std::endl;
         
-        float4 con_o = make_float4(100.0f, 0.0f, 100.0f, 1.0f);  // Small circle
+        // Create a very small circle using the helper function to ensure validity
+        float4 con_o = createEllipseCoefficients(0.0f, 1.0f, 1.0f, 0.1f);
         float2 center = {100.0f, 100.0f};
         dim3 grid = make_dim3(20, 20);
         
@@ -1076,12 +1117,19 @@ bool testEdgeCases() {
             }
             // 输出 t
             std::cout << "    t (for exp(-0.5 Q(x)) = threshold): " << t << std::endl;
+            std::cout << "    Ellipse Params: A=" << std::fixed << std::setprecision(6) << con_o.x
+                      << ", B=" << std::fixed << std::setprecision(6) << con_o.y
+                      << ", C=" << std::fixed << std::setprecision(6) << con_o.z
+                      << ", opacity=" << std::fixed << std::setprecision(6) << con_o.w << std::endl;
             ExtremePoints extremes = computeExtremePoints(con_o, disc, t, center);
             float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
             float theta = computeTiltAngle(cov2d);
             float theta_degrees = theta * 180.0f / M_PI;
             std::cout << "    Computed Tilt Angle: " << std::fixed << std::setprecision(2) << theta_degrees << " degrees" << std::endl;
-            float stretch_factor = computeStretchingFactor(theta, 1.1f);
+            
+            float eccentricity = computeEccentricity(con_o);
+            std::cout << "    Eccentricity: " << std::fixed << std::setprecision(6) << eccentricity << std::endl;
+            float stretch_factor = computeStretchingFactor(theta, eccentricity);
             std::cout << "    Stretch Factor: " << std::fixed << std::setprecision(2) << stretch_factor << std::endl;
             
             DualBox dual_box = constructDualBoxes(extremes, center, stretch_factor);

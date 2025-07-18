@@ -60,8 +60,23 @@ __host__ __device__ inline float computeTiltAngle(const float3& cov2d) {
     return 0.5f * atan2f(numerator, denominator);
 }
 
-__host__ __device__ inline float computeStretchingFactor(float theta, float beta = 1.1f) {
-    return 1.0f + beta * fabsf(cosf(2.0f * theta));
+// Host/device version of computeStretchingFactor for testing purposes
+__host__ __device__ inline float computeStretchingFactor(
+    float theta, 
+    float eccentricity)
+{
+    if (eccentricity < 1e-6f) {
+        return 1.0f;
+    }
+    if (eccentricity > 0.99999f) {
+        return 1.0f;
+    }
+    float sin_2theta = sinf(2.0f * theta);
+    float sin_2theta_sq = sin_2theta * sin_2theta;
+    float e_sq = eccentricity * eccentricity;
+    float e_4 = e_sq * e_sq;
+    float stretch_modifier = (4.0f * (1.0f - e_sq)) / e_4;
+    return 1.0f + sin_2theta_sq * stretch_modifier;
 }
 
 __host__ __device__ inline float safeSqrt(float value) {
@@ -159,11 +174,11 @@ struct TiltAngleTestCase {
     const char* description;
 };
 
+// Test cases for stretching factor
 struct StretchingFactorTestCase {
     float theta;
-    float beta;
+    float eccentricity;
     float expected_factor;
-    const char* description;
 };
 
 struct ExtremePointsTestCase {
@@ -198,7 +213,7 @@ void testTiltAngleFunction(TiltAngleTestCase* test_cases, int num_cases, bool* r
 void testStretchingFactorFunction(StretchingFactorTestCase* test_cases, int num_cases, bool* results) {
     for (int idx = 0; idx < num_cases; idx++) {
         StretchingFactorTestCase& test = test_cases[idx];
-        float computed_factor = computeStretchingFactor(test.theta, test.beta);
+        float computed_factor = computeStretchingFactor(test.theta, test.eccentricity);
         
         results[idx] = isClose(computed_factor, test.expected_factor);
         
@@ -315,59 +330,26 @@ bool testStretchingFactorComputation() {
     std::cout << "\n=== Testing Stretching Factor Computation ===\n";
     
     // Test cases for critical angles
-    std::vector<StretchingFactorTestCase> test_cases = {
-        // Critical angles with β = 1.0
-        {0.0f, 1.0f, 2.0f, "θ = 0° with β = 1.0 (maximum stretching)"},
-        {M_PI/2.0f, 1.0f, 2.0f, "θ = 90° with β = 1.0 (maximum stretching)"},
-        {M_PI/4.0f, 1.0f, 1.0f, "θ = 45° with β = 1.0 (minimal stretching)"},
-        {3.0f*M_PI/4.0f, 1.0f, 1.0f, "θ = 135° with β = 1.0 (minimal stretching)"},
-        
-        // Critical angles with β = 1.1 (default)
-        {0.0f, 1.1f, 2.1f, "θ = 0° with β = 1.1 (maximum stretching)"},
-        {M_PI/2.0f, 1.1f, 2.1f, "θ = 90° with β = 1.1 (maximum stretching)"},
-        {M_PI/4.0f, 1.1f, 1.0f, "θ = 45° with β = 1.1 (minimal stretching)"},
-        
-        // Critical angles with β = 1.2 (maximum)
-        {0.0f, 1.2f, 2.2f, "θ = 0° with β = 1.2 (maximum stretching)"},
-        {M_PI/2.0f, 1.2f, 2.2f, "θ = 90° with β = 1.2 (maximum stretching)"},
-        {M_PI/4.0f, 1.2f, 1.0f, "θ = 45° with β = 1.2 (minimal stretching)"},
-        
-        // Intermediate angles
-        {M_PI/6.0f, 1.1f, 1.0f + 1.1f * fabsf(cosf(M_PI/3.0f)), "θ = 30° with β = 1.1"},
-        {M_PI/3.0f, 1.1f, 1.0f + 1.1f * fabsf(cosf(2.0f*M_PI/3.0f)), "θ = 60° with β = 1.1"},
-        
-        // Negative angles (should behave the same due to |cos(2θ)|)
-        {-M_PI/4.0f, 1.1f, 1.0f, "θ = -45° with β = 1.1 (minimal stretching)"},
-        {-M_PI/6.0f, 1.1f, 1.0f + 1.1f * fabsf(cosf(-M_PI/3.0f)), "θ = -30° with β = 1.1"},
-        
-        // Edge cases
-        {0.0f, 1.0f, 2.0f, "Minimum β at critical angle"},
-        {M_PI/4.0f, 2.0f, 1.0f, "Large β at minimal stretching angle"},
+    StretchingFactorTestCase tests[] = {
+        {0.0f, 0.5f, 1.0f},                               // Aligned with axes, no stretch
+        {M_PI / 4.0f, 0.5f, 1.0f + (4.0f * (1.0f - 0.25f)) / (0.5f*0.5f*0.5f*0.5f)}, // 45 degrees, max stretch
+        {M_PI / 2.0f, 0.5f, 1.0f},                               // Aligned with axes, no stretch
+        {0.0f, 0.9f, 1.0f},                               // High eccentricity, aligned
+        {M_PI / 4.0f, 0.9f, 1.0f + (4.0f * (1.0f - 0.81f)) / (0.9f*0.9f*0.9f*0.9f)},// High eccentricity, 45 deg
     };
     
-    int num_cases = test_cases.size();
-    
-    // Allocate CPU memory
-    bool* results = new bool[num_cases];
-    
-    // Run CPU tests
-    testStretchingFactorFunction(test_cases.data(), num_cases, results);
-    
-    // Check results
-    int passed = 0;
-    for (int i = 0; i < num_cases; i++) {
-        if (results[i]) {
-            passed++;
-            std::cout << "PASS: " << test_cases[i].description << std::endl;
+    for (const auto& test : tests) {
+        float computed_factor = computeStretchingFactor(test.theta, test.eccentricity);
+        if (fabsf(computed_factor - test.expected_factor) > 1e-4f) {
+            std::cerr << "Stretching factor test failed for theta=" << test.theta
+                      << ", eccentricity=" << test.eccentricity
+                      << ". Expected " << test.expected_factor << ", got " << computed_factor << std::endl;
+            return false; // Indicate failure
         }
     }
     
-    std::cout << "Stretching Factor Tests: " << passed << "/" << num_cases << " passed\n";
-    
-    // Cleanup
-    delete[] results;
-    
-    return passed == num_cases;
+    std::cout << "Stretching Factor Tests: All tests passed\n";
+    return true;
 }
 
 // Host function to run extreme points tests

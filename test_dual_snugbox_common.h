@@ -85,7 +85,6 @@ __host__ __device__ inline bool passesOpacityThreshold(float opacity);
 __host__ __device__ inline float2 clampCoordinates(const float2& coord);
 __host__ __device__ inline float safeSqrt(float value);
 __host__ __device__ inline float computeTiltAngle(const float3& cov2d);
-__host__ __device__ inline float computeStretchingFactor(float theta, float beta = 1.1f);
 __host__ __device__ inline ExtremePoints computeExtremePoints(
     const float4& con_o, float disc, float t, const float2& p);
 __host__ __device__ inline DualBox constructDualBoxes(
@@ -96,5 +95,33 @@ __host__ inline TileIntersectionResult generateTileIntersections(
 
 // Helper function to create ellipse coefficients from angle and aspect ratio
 float4 createEllipseCoefficients(float angle_rad, float aspect_ratio, float opacity = 1.0f);
+
+// Host/device version of computeEccentricity for testing purposes
+__host__ __device__ inline float computeEccentricity(const float4& con_o) {
+    float A = con_o.x;
+    float B = con_o.y;
+    float C = con_o.z;
+
+    float diff_AC = A - C;
+    float term_under_sqrt = fmaf(diff_AC, diff_AC, 4.0f * B * B);
+    float term_sqrt = sqrtf(term_under_sqrt);
+    
+    float sum_AC = A + C;
+
+    float lambda_max = (sum_AC + term_sqrt) / 2.0f;
+    float lambda_min = (sum_AC - term_sqrt) / 2.0f;
+
+    if (lambda_max <= 1e-8f) {
+        return 0.0f;
+    }
+
+    float ratio = lambda_min / lambda_max;
+    ratio = fmaxf(0.0f, ratio);
+    
+    return sqrtf(1.0f - ratio);
+}
+
+// Host/device version of computeStretchingFactor for testing purposes
+__host__ __device__ inline float computeStretchingFactor(float theta, float eccentricity);
 
 #endif // TEST_DUAL_SNUGBOX_COMMON_H
