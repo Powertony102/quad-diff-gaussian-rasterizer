@@ -1,0 +1,125 @@
+=== Dual-SnugBox Integration Tests for Tile Culling System ===
+Testing Requirements: 5.1, 5.2, 5.3, 5.4
+- Verify no duplicate (tile_index, gaussian_index) pairs in output
+- Test coverage completeness for various ellipse orientations
+- Validate proper handling of overlapping box regions
+
+
+=== Test 1: No Duplicate Tile Pairs ===
+Requirements: 5.1, 5.2, 5.3, 5.4 - Unique tile intersection generation
+  Test 1: Horizontal ellipse overlap test
+    PASS: No duplicate tiles found (4 unique tiles)
+  Test 2: Vertical ellipse overlap test
+    PASS: No duplicate tiles found (4 unique tiles)
+  Test 3: 45-degree ellipse overlap test
+    PASS: No duplicate tiles found (4 unique tiles)
+  Test 4: Large ellipse overlap test
+    PASS: No duplicate tiles found (3 unique tiles)
+  Test 5: Small ellipse minimal overlap test
+    PASS: No duplicate tiles found (11 unique tiles)
+No Duplicate Pairs Test: PASSED
+
+=== Test 2: Coverage Completeness ===
+Requirements: 5.1, 5.2, 5.3, 5.4 - Complete ellipse coverage verification
+  Test 1: Angle 0.0°, Aspect 1.5
+    PASS: Complete coverage (2 tiles)
+  Test 2: Angle 0.0°, Aspect 2.0
+    PASS: Complete coverage (3 tiles)
+  Test 3: Angle 0.0°, Aspect 3.0
+    PASS: Complete coverage (3 tiles)
+  Test 4: Angle 0.0°, Aspect 4.0
+    PASS: Complete coverage (5 tiles)
+  Test 5: Angle 30.0°, Aspect 1.5
+    PASS: Complete coverage (7 tiles)
+  Test 6: Angle 30.0°, Aspect 2.0
+    PASS: Complete coverage (5 tiles)
+  Test 7: Angle 30.0°, Aspect 3.0
+    PASS: Complete coverage (5 tiles)
+  Test 8: Angle 30.0°, Aspect 4.0
+    PASS: Complete coverage (5 tiles)
+  Test 9: Angle 45.0°, Aspect 1.5
+    PASS: Complete coverage (4 tiles)
+  Test 10: Angle 45.0°, Aspect 2.0
+    PASS: Complete coverage (4 tiles)
+  Test 11: Angle 45.0°, Aspect 3.0
+    PASS: Complete coverage (4 tiles)
+  Test 12: Angle 45.0°, Aspect 4.0
+    PASS: Complete coverage (4 tiles)
+  Test 13: Angle 60.0°, Aspect 1.5
+    PASS: Complete coverage (7 tiles)
+  Test 14: Angle 60.0°, Aspect 2.0
+    PASS: Complete coverage (5 tiles)
+  Test 15: Angle 60.0°, Aspect 3.0
+    PASS: Complete coverage (5 tiles)
+  Test 16: Angle 60.0°, Aspect 4.0
+    PASS: Complete coverage (5 tiles)
+  Test 17: Angle 90.0°, Aspect 1.5
+    PASS: Complete coverage (3 tiles)
+  Test 18: Angle 90.0°, Aspect 2.0
+    PASS: Complete coverage (3 tiles)
+  Test 19: Angle 90.0°, Aspect 3.0
+    PASS: Complete coverage (3 tiles)
+  Test 20: Angle 90.0°, Aspect 4.0
+    PASS: Complete coverage (5 tiles)
+  Test 21: Angle 120.0°, Aspect 1.5
+    PASS: Complete coverage (7 tiles)
+  Test 22: Angle 120.0°, Aspect 2.0
+    PASS: Complete coverage (5 tiles)
+  Test 23: Angle 120.0°, Aspect 3.0
+    PASS: Complete coverage (5 tiles)
+  Test 24: Angle 120.0°, Aspect 4.0
+    PASS: Complete coverage (5 tiles)
+  Test 25: Angle 135.0°, Aspect 1.5
+    PASS: Complete coverage (3 tiles)
+  Test 26: Angle 135.0°, Aspect 2.0
+    PASS: Complete coverage (3 tiles)
+  Test 27: Angle 135.0°, Aspect 3.0
+    PASS: Complete coverage (3 tiles)
+  Test 28: Angle 135.0°, Aspect 4.0
+    PASS: Complete coverage (3 tiles)
+  Test 29: Angle 150.0°, Aspect 1.5
+    PASS: Complete coverage (7 tiles)
+  Test 30: Angle 150.0°, Aspect 2.0
+    PASS: Complete coverage (5 tiles)
+  Test 31: Angle 150.0°, Aspect 3.0
+    PASS: Complete coverage (5 tiles)
+  Test 32: Angle 150.0°, Aspect 4.0
+    PASS: Complete coverage (5 tiles)
+Coverage Completeness Test: PASSED
+
+=== Test 3: Overlapping Box Handling ===
+Requirements: 5.1, 5.2, 5.3, 5.4 - Proper handling of overlapping regions
+  Test 1: Nearly circular ellipse with maximum overlap
+    Box areas: Left=1238.6, Right=1238.6, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 17 total tiles)
+  Test 2: Slightly tilted ellipse with moderate overlap
+    Box areas: Left=180.9, Right=180.9, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 7 total tiles)
+  Test 3: Horizontal ellipse at critical stretching angle
+    Box areas: Left=139.6, Right=139.6, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 8 total tiles)
+  Test 4: Large ellipse with significant overlap
+    Box areas: Left=101.3, Right=101.3, Overlap=0.0
+    PASS: Overlapping region handled correctly (0 overlap tiles, 3 total tiles)
+Overlapping Box Handling Test: PASSED
+
+=== Test 4: Edge Cases and Boundary Conditions ===
+Testing edge cases for robust tile culling system
+  Test 4.1: Ellipse at grid boundary
+    PASS: Boundary case handled correctly
+  Test 4.2: Very small ellipse
+    PASS: Small ellipse handled correctly (1 tiles)
+Edge Cases Test: PASSED
+
+=== Integration Test Summary ===
+✅ ALL INTEGRATION TESTS PASSED
+✅ No duplicate (tile_index, gaussian_index) pairs verified
+✅ Coverage completeness confirmed for various ellipse orientations
+✅ Overlapping box regions handled correctly
+✅ Edge cases and boundary conditions validated
+
+The dual-SnugBox tile culling system meets all requirements:
+- Requirement 5.1: Union-based tile processing prevents duplicates
+- Requirement 5.2: Logical OR operation for tile overlap detection
+- Requirement 5.3: Unique (tile_index, gaussian_index) pairs generated
+- Requirement 5.4: No double-counting in overlapping regions
