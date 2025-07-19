@@ -50,6 +50,7 @@ namespace CudaRasterizer
 			const bool prefiltered,
       float* kernel_times,
 			float* out_color,
+			float* invdepths,  // 新增：逆深度期望值输出
 			int* radii = nullptr,
 			bool debug = false);
 

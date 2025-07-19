@@ -277,7 +277,9 @@ renderCUDA(
 	float* __restrict__ final_T,
 	uint32_t* __restrict__ n_contrib,
 	const float* __restrict__ bg_color,
-	float* __restrict__ out_color)
+	float* __restrict__ out_color,
+	const float* __restrict__ depths,  // 新增：深度值
+	float* __restrict__ invdepths)     // 新增：逆深度期望值
 {
 	// Identify current tile and associated min/max pixel range.
 	auto block = cg::this_thread_block();
@@ -308,6 +310,7 @@ renderCUDA(
 	uint32_t contributor = 0;
 	uint32_t last_contributor = 0;
 	float C[CHANNELS] = { 0 };
+	float expected_invdepth = 0.0f;  // 新增：逆深度期望值初始化
 
 	// Iterate over batches until all done or range is complete
 	for (int i = 0; i < rounds; i++, toDo -= BLOCK_SIZE)
@@ -361,6 +364,10 @@ renderCUDA(
 			for (int ch = 0; ch < CHANNELS; ch++)
 				C[ch] += features[collected_id[j] * CHANNELS + ch] * alpha * T;
 
+			// 新增：计算逆深度期望值
+			// invdepths = Σ (1/depth_i) × α_i × T_i
+			expected_invdepth += (1.f / depths[collected_id[j]]) * alpha * T;
+
 			T = test_T;
 
 			// Keep track of last range entry to update this
@@ -377,6 +384,7 @@ renderCUDA(
 		n_contrib[pix_id] = last_contributor;
 		for (int ch = 0; ch < CHANNELS; ch++)
 			out_color[ch * H * W + pix_id] = C[ch] + T * bg_color[ch];
+		invdepths[pix_id] = expected_invdepth;  // 新增：保存逆深度期望值
 	}
 }
 
@@ -391,7 +399,9 @@ void FORWARD::render(
 	float* final_T,
 	uint32_t* n_contrib,
 	const float* bg_color,
-	float* out_color)
+	float* out_color,
+	const float* depths,  // 新增：深度值
+	float* invdepths)     // 新增：逆深度期望值
 {
 	renderCUDA<NUM_CHANNELS> << <grid, block >> > (
 		ranges,
@@ -403,7 +413,9 @@ void FORWARD::render(
 		final_T,
 		n_contrib,
 		bg_color,
-		out_color);
+		out_color,
+		depths,    // 新增：传递深度值
+		invdepths); // 新增：传递逆深度期望值
 }
 
 void FORWARD::preprocess(int P, int D, int M,

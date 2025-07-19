@@ -48,6 +48,7 @@ namespace CudaRasterizer
 		uint2* ranges;
 		uint32_t* n_contrib;
 		float* accum_alpha;
+		float* invdepths;  // 新增：逆深度期望值
 
 		static ImageState fromChunk(char*& chunk, size_t N);
 	};
