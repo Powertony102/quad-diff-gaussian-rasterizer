@@ -56,52 +56,12 @@ class _RasterizeGaussians(torch.autograd.Function):
         rotations,
         cov3Ds_precomp,
         scores,
-        raster_settings
+        raster_settings,
     ):
 
-        # Defensive programming: ensure all tensor parameters are valid torch.Tensor objects
-        # This prevents AttributeError when non-tensor objects are passed
-        if not isinstance(colors_precomp, torch.Tensor):
-            colors_precomp = torch.empty(0, dtype=means3D.dtype, device=means3D.device)
-        
-        if not isinstance(sh, torch.Tensor):
-            sh = torch.empty(0, dtype=means3D.dtype, device=means3D.device)
-            
-        if not isinstance(cov3Ds_precomp, torch.Tensor):
-            cov3Ds_precomp = torch.empty(0, dtype=means3D.dtype, device=means3D.device)
-
         # Restructure arguments the way that the C++ lib expects them
-        # The C++ function expects the complete SH tensor, not split into dc and rest
-        if sh.numel() != 0:
-            sh_tensor = sh.contiguous()
-        else:
-            # Empty tensor when SHs are not provided
-            sh_tensor = torch.empty((0, 0, 0), dtype=means3D.dtype, device=means3D.device)
-
-        # Ensure background is on the same device as means3D to avoid cross-device issues
-        bg_tensor = raster_settings.bg
-        if bg_tensor.device != means3D.device:
-            bg_tensor = bg_tensor.to(means3D.device)
-        # Fix: Ensure bg_tensor has correct dtype to avoid implicit type promotion
-        if bg_tensor.dtype != means3D.dtype:
-            bg_tensor = bg_tensor.to(dtype=means3D.dtype)
-
-        # Fix: Ensure empty tensors have consistent shapes based on actual Gaussian count
-        N = means3D.shape[0] if means3D.numel() > 0 else 0
-        if colors_precomp.numel() == 0:
-            colors_precomp = torch.empty((N, 3), dtype=means3D.dtype, device=means3D.device)
-        if cov3Ds_precomp.numel() == 0:
-            cov3Ds_precomp = torch.empty((N, 6), dtype=means3D.dtype, device=means3D.device)
-        if scales is not None and scales.numel() == 0:
-            scales = torch.empty((N, 3), dtype=means3D.dtype, device=means3D.device)
-        if rotations is not None and rotations.numel() == 0:
-            rotations = torch.empty((N, 4), dtype=means3D.dtype, device=means3D.device)
-        # Fix: Ensure empty SH tensor has consistent shape
-        if sh_tensor.numel() == 0:
-            sh_tensor = torch.empty((N, 3, (raster_settings.sh_degree+1)**2), dtype=means3D.dtype, device=means3D.device)
-
         args = (
-            bg_tensor,
+            raster_settings.bg, 
             means3D,
             colors_precomp,
             opacities,
@@ -115,11 +75,11 @@ class _RasterizeGaussians(torch.autograd.Function):
             raster_settings.tanfovy,
             raster_settings.image_height,
             raster_settings.image_width,
-            sh_tensor,
+            sh,
             raster_settings.sh_degree,
             raster_settings.campos,
             raster_settings.prefiltered,
-            raster_settings.debug,
+            raster_settings.debug
         )
 
         # Invoke C++/CUDA rasterizer
@@ -134,97 +94,54 @@ class _RasterizeGaussians(torch.autograd.Function):
         else:
             num_rendered, color, radii, kernel_times, geomBuffer, binningBuffer, imgBuffer = _C.rasterize_gaussians(*args)
 
-        # Save values required for backward
+        # Keep relevant tensors for backward
         ctx.raster_settings = raster_settings
-        ctx.num_rendered = num_rendered  # R
-
-        # Create invdepth tensor (depth information)
-        invdepth = torch.zeros_like(color[0:1])  # Same shape as one channel of color
-
-        ctx.save_for_backward(
-            colors_precomp,
-            opacities,
-            means3D,
-            scales,
-            rotations,
-            cov3Ds_precomp,
-            radii,
-            sh_tensor,
-            geomBuffer,
-            binningBuffer,
-            imgBuffer,
-            invdepth,
-        )
-
-        # Keep the original return signature (color, radii, depth) expected by calling code.
-        return color, radii, invdepth
+        ctx.num_rendered = num_rendered
+        ctx.save_for_backward(colors_precomp, means3D, scales, rotations, cov3Ds_precomp, radii, sh, geomBuffer, binningBuffer, imgBuffer)
+        return color, radii, kernel_times
 
     @staticmethod
-    def backward(ctx, grad_out_color, _0, grad_out_invdepth):
+    def backward(ctx, grad_out_color, _0, _1):
 
         # Restore necessary values from context
         num_rendered = ctx.num_rendered
         raster_settings = ctx.raster_settings
-        (colors_precomp,
-         opacities,
-         means3D,
-         scales,
-         rotations,
-         cov3Ds_precomp,
-         radii,
-         sh_tensor,
-         geomBuffer,
-         binningBuffer,
-         imgBuffer,
-         invdepth_saved) = ctx.saved_tensors
-
-        # Handle missing gradient for invdepth (can be None if not used)
-        if grad_out_invdepth is None:
-            grad_out_invdepth = torch.empty((0,), dtype=means3D.dtype, device=means3D.device)
+        colors_precomp, means3D, scales, rotations, cov3Ds_precomp, radii, sh, geomBuffer, binningBuffer, imgBuffer = ctx.saved_tensors
 
         # Restructure args as C++ method expects them
-        bg_tensor = raster_settings.bg
-        if bg_tensor.device != means3D.device:
-            bg_tensor = bg_tensor.to(means3D.device)
-        # Fix: Ensure bg_tensor has correct dtype to avoid implicit type promotion
-        if bg_tensor.dtype != means3D.dtype:
-            bg_tensor = bg_tensor.to(dtype=means3D.dtype)
-
-        args = (
-            bg_tensor,
-            means3D,
-            radii,
-            colors_precomp,
-            scales,
-            rotations,
-            raster_settings.scale_modifier,
-            cov3Ds_precomp,
-            raster_settings.viewmatrix,
-            raster_settings.projmatrix,
-            raster_settings.tanfovx,
-            raster_settings.tanfovy,
-            grad_out_color,
-            sh_tensor,
-            raster_settings.sh_degree,
-            raster_settings.campos,
-            geomBuffer,
-            num_rendered,
-            binningBuffer,
-            imgBuffer,
-            raster_settings.debug,
-        )
+        args = (raster_settings.bg,
+                means3D, 
+                radii, 
+                colors_precomp, 
+                scales, 
+                rotations, 
+                raster_settings.scale_modifier, 
+                cov3Ds_precomp, 
+                raster_settings.viewmatrix, 
+                raster_settings.projmatrix, 
+                raster_settings.tanfovx, 
+                raster_settings.tanfovy, 
+                grad_out_color, 
+                sh, 
+                raster_settings.sh_degree, 
+                raster_settings.campos,
+                geomBuffer,
+                num_rendered,
+                binningBuffer,
+                imgBuffer,
+                raster_settings.debug)
 
         # Compute gradients for relevant tensors by invoking backward method
         if raster_settings.debug:
             cpu_args = cpu_deep_copy_tuple(args) # Copy them before they can be corrupted
             try:
-                grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D, grad_cov3Ds_precomp, grad_sh, grad_scales, grad_rotations, grad_G2 = _C.rasterize_gaussians_backward(*args)
+                grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D, grad_cov3Ds_precomp, grad_sh, grad_scales, grad_rotations, grad_gaussians2 = _C.rasterize_gaussians_backward(*args)
             except Exception as ex:
                 torch.save(cpu_args, "snapshot_bw.dump")
                 print("\nAn error occured in backward. Writing snapshot_bw.dump for debugging.\n")
                 raise ex
         else:
-             grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D, grad_cov3Ds_precomp, grad_sh, grad_scales, grad_rotations, grad_G2 = _C.rasterize_gaussians_backward(*args)
+             grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D, grad_cov3Ds_precomp, grad_sh, grad_scales, grad_rotations, grad_gaussians2 = _C.rasterize_gaussians_backward(*args)
 
         grads = (
             grad_means3D,
@@ -235,8 +152,8 @@ class _RasterizeGaussians(torch.autograd.Function):
             grad_scales,
             grad_rotations,
             grad_cov3Ds_precomp,
-            None,  # scores (not used)
-            None,  # raster_settings
+            grad_gaussians2,
+            None,
         )
 
         return grads
@@ -271,23 +188,29 @@ class GaussianRasterizer(nn.Module):
             
         return visible
 
-    def forward(self, means3D, means2D, opacities, shs = None, colors_precomp = None, scales = None, rotations = None, cov3D_precomp = None):
+    def forward(self, means3D, means2D, opacities, scores, shs = None, colors_precomp = None, scales = None, rotations = None, cov3D_precomp = None):
         
-        # This is an ugly fix, but it works.
-        # The original code had a check that was too strict.
-        if colors_precomp is None:
-            colors_precomp = torch.empty(0, dtype=means3D.dtype, device=means3D.device)
+        raster_settings = self.raster_settings
+
+        if (shs is None and colors_precomp is None) or (shs is not None and colors_precomp is not None):
+            raise Exception('Please provide excatly one of either SHs or precomputed colors!')
+        
+        if ((scales is None or rotations is None) and cov3D_precomp is None) or ((scales is not None or rotations is not None) and cov3D_precomp is not None):
+            raise Exception('Please provide exactly one of either scale/rotation pair or precomputed 3D covariance!')
         
         if shs is None:
-            shs = torch.empty(0, dtype=means3D.dtype, device=means3D.device)
-            
+            shs = torch.Tensor([])
+        if colors_precomp is None:
+            colors_precomp = torch.Tensor([])
+
+        if scales is None:
+            scales = torch.Tensor([])
+        if rotations is None:
+            rotations = torch.Tensor([])
         if cov3D_precomp is None:
-            if scales is None or rotations is None:
-                raise Exception('Please provide either cov3D_precomp or scales and rotations!')
-            # Create empty tensor when cov3D_precomp is None
-            cov3D_precomp = torch.empty(0, dtype=means3D.dtype, device=means3D.device)
-        
-        # All clear, rasterize
+            cov3D_precomp = torch.Tensor([])
+
+        # Invoke C++/CUDA rasterization routine
         return rasterize_gaussians(
             means3D,
             means2D,
@@ -297,6 +220,7 @@ class GaussianRasterizer(nn.Module):
             scales, 
             rotations,
             cov3D_precomp,
-            None, # scores (not used)
-            self.raster_settings
+            scores,
+            raster_settings, 
         )
+
