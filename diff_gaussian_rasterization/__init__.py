@@ -82,16 +82,23 @@ class _RasterizeGaussians(torch.autograd.Function):
         bg_tensor = raster_settings.bg
         if bg_tensor.device != means3D.device:
             bg_tensor = bg_tensor.to(means3D.device)
+        # Fix: Ensure bg_tensor has correct dtype to avoid implicit type promotion
+        if bg_tensor.dtype != means3D.dtype:
+            bg_tensor = bg_tensor.to(dtype=means3D.dtype)
 
-        # Ensure empty tensors have correct device and dtype
+        # Fix: Ensure empty tensors have consistent shapes based on actual Gaussian count
+        N = means3D.shape[0] if means3D.numel() > 0 else 0
         if colors_precomp.numel() == 0:
-            colors_precomp = torch.empty((0, 3), dtype=means3D.dtype, device=means3D.device)
+            colors_precomp = torch.empty((N, 3), dtype=means3D.dtype, device=means3D.device)
         if cov3Ds_precomp.numel() == 0:
-            cov3Ds_precomp = torch.empty((0, 6), dtype=means3D.dtype, device=means3D.device)
+            cov3Ds_precomp = torch.empty((N, 6), dtype=means3D.dtype, device=means3D.device)
         if scales is not None and scales.numel() == 0:
-            scales = torch.empty((0, 3), dtype=means3D.dtype, device=means3D.device)
+            scales = torch.empty((N, 3), dtype=means3D.dtype, device=means3D.device)
         if rotations is not None and rotations.numel() == 0:
-            rotations = torch.empty((0, 4), dtype=means3D.dtype, device=means3D.device)
+            rotations = torch.empty((N, 4), dtype=means3D.dtype, device=means3D.device)
+        # Fix: Ensure empty SH tensor has consistent shape
+        if sh_tensor.numel() == 0:
+            sh_tensor = torch.empty((N, 3, (raster_settings.sh_degree+1)**2), dtype=means3D.dtype, device=means3D.device)
 
         args = (
             bg_tensor,
@@ -179,6 +186,9 @@ class _RasterizeGaussians(torch.autograd.Function):
         bg_tensor = raster_settings.bg
         if bg_tensor.device != means3D.device:
             bg_tensor = bg_tensor.to(means3D.device)
+        # Fix: Ensure bg_tensor has correct dtype to avoid implicit type promotion
+        if bg_tensor.dtype != means3D.dtype:
+            bg_tensor = bg_tensor.to(dtype=means3D.dtype)
 
         args = (
             bg_tensor,
@@ -266,16 +276,16 @@ class GaussianRasterizer(nn.Module):
         # This is an ugly fix, but it works.
         # The original code had a check that was too strict.
         if colors_precomp is None:
-            colors_precomp = torch.empty(0, device=means3D.device)
+            colors_precomp = torch.empty(0, dtype=means3D.dtype, device=means3D.device)
         
         if shs is None:
-            shs = torch.empty(0, device=means3D.device)
+            shs = torch.empty(0, dtype=means3D.dtype, device=means3D.device)
             
         if cov3D_precomp is None:
             if scales is None or rotations is None:
                 raise Exception('Please provide either cov3D_precomp or scales and rotations!')
             # Create empty tensor when cov3D_precomp is None
-            cov3D_precomp = torch.empty(0, device=means3D.device)
+            cov3D_precomp = torch.empty(0, dtype=means3D.dtype, device=means3D.device)
         
         # All clear, rasterize
         return rasterize_gaussians(
