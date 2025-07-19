@@ -555,6 +555,9 @@ __device__ inline DualBox constructDualBoxes(
         return dual_box;
     }
 
+    // Temporary test: Test if stretch_factor is working
+    stretch_factor = 2.0f;
+
     // Apply stretching to left box along its longer dimension, away from center
     if (left_width >= left_height) {
         // Stretch horizontally towards center (rightward for left box)
