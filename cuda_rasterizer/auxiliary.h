@@ -909,7 +909,7 @@ __device__ inline uint32_t duplicateToTilesTouched(
     // FIXED: Compute threshold parameter t for Gaussian cutoff correctly
     // For Gaussian exp(-0.5 * (Ax² + 2Bxy + Cy²)) = threshold
     // We solve for the contour where the Gaussian equals 1/255 (minimum visible opacity)
-    float threshold = 1.0f / 255.0f;
+    float threshold = con_o.w * 255.0f;
     float t = 2.0f * __logf(threshold);  // t = -2*ln(threshold) for the ellipse equation
     
     if (!isfinite(t) || t <= 0.0f) {
