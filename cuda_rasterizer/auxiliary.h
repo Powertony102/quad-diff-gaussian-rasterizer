@@ -208,23 +208,33 @@ __device__ inline float computeEccentricity(const float4& con_o) {
     return sqrtf(1.0f - ratio);
 }
 
-// Compute stretching factor based on tilt angle and eccentricity.
-// The formula is derived to apply adaptive stretching.
-// Requirements: 2.2, 2.3, 2.4
-__device__ inline float computeStretchingFactor(
-    float theta, 
-    float eccentricity) 
-{
-    float sin_2theta = sinf(2.0f * theta);
-    float sin_2theta_sq = sin_2theta * sin_2theta;
-
-    float e_sq = eccentricity * eccentricity;
-    float e_4 = e_sq * e_sq;
+// Compute bounding rectangle of ellipse using geometric approach
+// This matches the original test.py method for consistency
+__device__ inline ExtremePoints computeBoundingRectangle(
+    const float2& center,
+    float a, float b, float theta_rad
+) {
+    ExtremePoints ext;
     
-    // This term determines the magnitude of the stretch based on eccentricity.
-    float stretch_modifier = e_4 / (4.0f * (1.0f - e_sq));
-
-    return 1.0f / __fsqrt_rn(1.0f + sin_2theta_sq * stretch_modifier) + 1.0f;
+    // Calculate ellipse boundaries after rotation
+    float cos_theta = cosf(theta_rad);
+    float sin_theta = sinf(theta_rad);
+    
+    // Ellipse boundary calculation
+    float dx = sqrtf((a * cos_theta) * (a * cos_theta) + (b * sin_theta) * (b * sin_theta));
+    float dy = sqrtf((a * sin_theta) * (a * sin_theta) + (b * cos_theta) * (b * cos_theta));
+    
+    float x_min = center.x - dx;
+    float x_max = center.x + dx;
+    float y_min = center.y - dy;
+    float y_max = center.y + dy;
+    
+    ext.x_extremes = make_float2(x_min, x_max);
+    ext.y_extremes = make_float2(y_min, y_max);
+    ext.x_coords_at_y_extremes = make_float2(x_min, x_max);
+    ext.y_coords_at_x_extremes = make_float2(y_min, y_max);
+    
+    return ext;
 }
 
 // ---------------------------------------------------------------------------
@@ -509,17 +519,46 @@ __device__ inline uint32_t duplicateToTilesTouched(
     uint32_t* gaussian_values_unsorted
     )
 {
-    float disc = con_o.y * con_o.y - con_o.x * con_o.z;
-
-    float threshold = con_o.w * 255.0f;
-    float t = 2.0f * __logf(threshold);  // t = 2*ln(threshold) for the ellipse equation
-    
-    ExtremePoints extremes = computeExtremePoints(con_o, disc, t, p);
-    
     float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
     float theta = computeTiltAngle(cov2d);
+    float eccentricity = computeEccentricity(con_o);
     
-    float eccentricity = computeEccentricity(con_o); // Compute eccentricity
+    // Extract ellipse parameters a and b from con_o
+    // con_o represents the inverse covariance matrix: [[A, B], [B, C]]
+    // We need to compute the original covariance matrix and extract a, b
+    float A = con_o.x;
+    float B = con_o.y;
+    float C = con_o.z;
+    
+    // Compute determinant of the inverse covariance matrix
+    float det_inv = A * C - B * B;
+    
+    // The original covariance matrix is the inverse of [[A, B], [B, C]]
+    // For a 2x2 matrix [[a11, a12], [a21, a22]], the inverse is:
+    // [[a22, -a12], [-a21, a11]] / det
+    float cov_xx = C / det_inv;
+    float cov_xy = -B / det_inv;
+    float cov_yy = A / det_inv;
+    
+    // Extract a and b from the covariance matrix
+    // The covariance matrix represents the ellipse parameters after rotation
+    // We need to compute the principal axes a and b
+    float trace = cov_xx + cov_yy;
+    float det = cov_xx * cov_yy - cov_xy * cov_xy;
+    
+    // Eigenvalues are (trace ± sqrt(trace² - 4*det)) / 2
+    float discriminant = trace * trace - 4.0f * det;
+    float sqrt_disc = sqrtf(discriminant);
+    
+    float lambda_max = (trace + sqrt_disc) / 2.0f;
+    float lambda_min = (trace - sqrt_disc) / 2.0f;
+    
+    // a and b are the square roots of the eigenvalues
+    float a = sqrtf(lambda_max);
+    float b = sqrtf(lambda_min);
+    
+    // Use bounding rectangle instead of ellipse equation extremes
+    ExtremePoints extremes = computeBoundingRectangle(p, a, b, theta);
     
     DualBox dual_box = constructDualBoxes(extremes, p, theta, eccentricity);
     
