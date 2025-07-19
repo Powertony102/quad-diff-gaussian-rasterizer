@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2023, Inria
- * GRAPHDECO research group, https://team.inria.fr/graphdeco
- * All rights reserved.
- *
- * This software is free for non-commercial, research and evaluation use 
- * under the terms of the LICENSE.md file.
- *
- * For inquiries contact  george.drettakis@inria.fr
- */
+* Copyright (C) 2023, Inria
+* GRAPHDECO research group, https://team.inria.fr/graphdeco
+* All rights reserved.
+*
+* This software is free for non-commercial, research and evaluation use 
+* under the terms of the LICENSE.md file.
+*
+* For inquiries contact  george.drettakis@inria.fr
+*/
 
 #include "rasterizer_impl.h"
 #include <iostream>
@@ -76,7 +76,7 @@ __global__ void duplicateWithKeys(
 	uint64_t* gaussian_keys_unsorted,
 	uint32_t* gaussian_values_unsorted,
 	float4* con_o,
-  	uint32_t* tiles_touched,
+uint32_t* tiles_touched,
 	dim3 grid)
 {
 	auto idx = cg::this_grid().thread_rank();
@@ -88,14 +88,13 @@ __global__ void duplicateWithKeys(
 	{
 		// Find this Gaussian's offset in buffer for writing keys/values.
 		uint32_t off = (idx == 0) ? 0 : offsets[idx - 1];
-		// Update unsorted arrays with Gaussian idx for every tile that
-		// Gaussian touches
-		duplicateToTilesTouched(
-			points_xy[idx], con_o[idx], grid,
-			idx, off, depths[idx],
-			gaussian_keys_unsorted,
-			gaussian_values_unsorted
-		);
+	// Update unsorted arrays with Gaussian idx for every tile that
+	// Gaussian touches
+	duplicateToTilesTouched(
+		points_xy[idx], con_o[idx], grid,
+		idx, off, depths[idx],
+		gaussian_keys_unsorted,
+		gaussian_values_unsorted);
 	}
 }
 
@@ -204,20 +203,20 @@ int CudaRasterizer::Rasterizer::forward(
 	const float* cam_pos,
 	const float tan_fovx, float tan_fovy,
 	const bool prefiltered,
-  float* kernel_times,
+float* kernel_times,
 	float* out_color,
 	int* radii,
 	bool debug)
 {
-  // Timers for functions
-  cudaEvent_t overallStart, overallStop;
-  cudaEventCreate(&overallStart);
-  cudaEventCreate(&overallStop);
-  float milliseconds;
+// Timers for functions
+cudaEvent_t overallStart, overallStop;
+cudaEventCreate(&overallStart);
+cudaEventCreate(&overallStop);
+float milliseconds;
 
 	int num_rendered;
-  // Record Overall forward time
-  cudaEventRecord(overallStart, 0);
+// Record Overall forward time
+cudaEventRecord(overallStart, 0);
 
 	const float focal_y = height / (2.0f * tan_fovy);
 	const float focal_x = width / (2.0f * tan_fovx);
@@ -279,12 +278,6 @@ int CudaRasterizer::Rasterizer::forward(
 	// Retrieve total number of Gaussian instances to launch and resize aux buffers
 	CHECK_CUDA(cudaMemcpy(&num_rendered, geomState.point_offsets + P - 1, sizeof(int), cudaMemcpyDeviceToHost), debug);
 
-    // 新增：全局tile-gaussian对数上限保护，防止溢出
-    const int MAX_TOTAL_TILES = 100000000; // 可根据显存和实际需求调整
-    if (num_rendered > MAX_TOTAL_TILES) {
-        throw std::runtime_error("Total number of tile-gaussian pairs exceeds safe limit (" + std::to_string(MAX_TOTAL_TILES) + "), possible overflow. Try reducing image resolution or number of Gaussians, or adjust MAX_TOTAL_TILES.");
-    }
-
 	size_t binning_chunk_size = required<BinningState>(num_rendered);
 	char* binning_chunkptr = binningBuffer(binning_chunk_size);
 	BinningState binningState = BinningState::fromChunk(binning_chunkptr, num_rendered);
@@ -299,7 +292,7 @@ int CudaRasterizer::Rasterizer::forward(
 		binningState.point_list_keys_unsorted,
 		binningState.point_list_unsorted,
 		geomState.conic_opacity,
-    geomState.tiles_touched,
+	geomState.tiles_touched,
 		tile_grid)
 	CHECK_CUDA(, debug)
 
@@ -339,14 +332,14 @@ int CudaRasterizer::Rasterizer::forward(
 		background,
 		out_color), debug)
 
-  // End Overall timer
-  cudaEventRecord(overallStop, 0);
-  cudaEventSynchronize(overallStop);
-  cudaEventElapsedTime(&milliseconds, overallStart, overallStop);
-  kernel_times[0] = milliseconds;
+// End Overall timer
+cudaEventRecord(overallStop, 0);
+cudaEventSynchronize(overallStop);
+cudaEventElapsedTime(&milliseconds, overallStart, overallStop);
+kernel_times[0] = milliseconds;
 
-  cudaEventDestroy(overallStart);
-  cudaEventDestroy(overallStop);
+cudaEventDestroy(overallStart);
+cudaEventDestroy(overallStop);
 
 	return num_rendered;
 }
@@ -421,7 +414,7 @@ void CudaRasterizer::Rasterizer::backward(
 		(float4*)dL_dconic,
 		dL_dopacity,
 		dL_dcolor,
-    dL_dG2), debug)
+	dL_dG2), debug)
 
 	// Take care of the rest of preprocessing. Was the precomputed covariance
 	// given to us or a scales/rot pair? If precomputed, pass that. If not,
