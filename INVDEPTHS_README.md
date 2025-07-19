@@ -97,7 +97,7 @@ color, radii, kernel_times, invdepths = rasterize_gaussians(
 )
 
 # invdepths 现在包含每个像素的逆深度期望值
-print(f"invdepths shape: {invdepths.shape}")
+print(f"invdepths shape: {invdepths.shape}")  # 应该是 (1, H, W)
 print(f"invdepths range: [{invdepths.min():.6f}, {invdepths.max():.6f}]")
 ```
 
@@ -128,6 +128,15 @@ auto [rendered, color, radii, kernel_times, geomBuffer, binningBuffer, imgBuffer
 - `T_i` 是到第 i 个高斯点时的累积透明度
 - 求和是对所有影响该像素的高斯点进行的
 
+## 张量维度
+
+`invdepths` 是一个3D张量，维度为 `{1, H, W}`，其中：
+- 第一个维度固定为1
+- H 是图像高度
+- W 是图像宽度
+
+这种设计与其他输出张量（如 `out_color` 的 `{NUM_CHANNELS, H, W}`）保持一致。
+
 ## 测试
 
 运行测试脚本验证功能：
@@ -142,6 +151,7 @@ python test_invdepths.py
 1. `invdepths` 的计算需要有效的深度值，确保输入的高斯点在相机视锥体内
 2. 逆深度值可能包含零值或无穷大值，使用时需要进行适当的处理
 3. 该功能与现有的光栅化流程完全兼容，不会影响其他功能
+4. `invdepths` 是3D张量 `{1, H, W}`，使用时可以通过 `invdepths[0]` 或 `invdepths.squeeze(0)` 转换为2D张量
 
 ## 编译
 
@@ -150,4 +160,4 @@ python test_invdepths.py
 ```bash
 cd submodules/diff_gaussian_rasterization
 python setup.py build_ext --inplace
-``` 
+```

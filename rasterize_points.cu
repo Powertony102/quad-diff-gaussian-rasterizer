@@ -69,7 +69,7 @@ RasterizeGaussiansCUDA(
   torch::Tensor kernel_times = torch::full({1}, 0.0, float_opts.device(torch::kCPU));
   torch::Tensor out_color = torch::full({NUM_CHANNELS, H, W}, 0.0, float_opts);
   torch::Tensor radii = torch::full({P}, 0, means3D.options().dtype(torch::kInt32));
-  torch::Tensor invdepths = torch::full({H, W}, 0.0, float_opts);  // 新增：逆深度期望值张量
+  torch::Tensor invdepths = torch::full({1, H, W}, 0.0, float_opts);  // 修改：3D张量 {1, H, W}
 
   torch::Device device(torch::kCUDA);
   torch::TensorOptions options(torch::kByte);

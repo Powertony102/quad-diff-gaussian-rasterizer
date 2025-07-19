@@ -403,7 +403,7 @@ void FORWARD::render(
 	const float* depths,  // 新增：深度值
 	float* invdepths)     // 新增：逆深度期望值
 {
-	renderCUDA<NUM_CHANNELS> << <grid, block >> > (
+	renderCUDA<NUM_CHANNELS> <<<grid, block>>> (
 		ranges,
 		point_list,
 		W, H,
@@ -444,7 +444,7 @@ void FORWARD::preprocess(int P, int D, int M,
 	uint32_t* tiles_touched,
 	bool prefiltered)
 {
-	preprocessCUDA<NUM_CHANNELS> << <(P + 255) / 256, 256 >> > (
+	preprocessCUDA<NUM_CHANNELS> <<<(P + 255) / 256, 256>>> (
 		P, D, M,
 		means3D,
 		scales,

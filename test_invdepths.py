@@ -93,7 +93,7 @@ def test_invdepths():
         print(f"  - color shape: {color.shape}")
         print(f"  - radii shape: {radii.shape}")
         print(f"  - kernel_times shape: {kernel_times.shape}")
-        print(f"  - invdepths shape: {invdepths.shape}")
+        print(f"  - invdepths shape: {invdepths.shape} (应该是 (1, H, W))")
         
         # 检查invdepths的值范围
         invdepths_min = invdepths.min().item()
@@ -108,6 +108,13 @@ def test_invdepths():
         total_pixels = invdepths.numel()
         print(f"  - 非零像素数量: {non_zero_count}/{total_pixels} ({non_zero_count/total_pixels*100:.2f}%)")
         
+        # 验证维度
+        expected_shape = (1, image_height, image_width)
+        if invdepths.shape == expected_shape:
+            print("✓ invdepths维度正确")
+        else:
+            print(f"⚠ invdepths维度错误: 期望 {expected_shape}, 实际 {invdepths.shape}")
+            
         if non_zero_count > 0:
             print("✓ invdepths计算成功，包含有效的逆深度值")
         else:
