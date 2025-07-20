@@ -141,7 +141,7 @@ __forceinline__ __device__ bool in_frustum(int idx,
 
 	// Bring points to screen space
 	float4 p_hom = transformPoint4x4(p_orig, projmatrix);
-	float p_w = 1.0f / (p_hom.w + 0.0000001f);
+	// float p_w = 1.0f / (p_hom.w + 0.0000001f); // Unused variable
 	// float3 p_proj = { p_hom.x * p_w, p_hom.y * p_w, p_hom.z * p_w }; // Commented out unused variable
 	p_view = transformPoint4x3(p_orig, viewmatrix);
 
@@ -186,35 +186,11 @@ __device__ inline float computeTiltAngle(const float3& cov2d) {
 
     if (angle < 0.0f) {
         angle += M_PI;
-        printf("DEBUG: Converted negative angle to [0, π] range: %.6f\n", angle);
     }
 
-    // check if angle is in [0, π] range
+    // Simple debug output
     if (angle < 0.0f || angle > M_PI) {
-        printf("WARNING: Angle out of [0, π] range: angle=%.6f, M_PI=%.6f\n", angle, M_PI);
-    }
-
-    // check if angle is only in [0, π/2] range
-    if (angle > M_PI_2) {
-        printf("INFO: Angle in (π/2, π] range: angle=%.6f, M_PI_2=%.6f\n", angle, M_PI_2);
-    }
-    
-    // Print angle statistics
-    static int total_angles = 0;
-    static int angles_0_to_pi2 = 0;
-    static int angles_pi2_to_pi = 0;
-    total_angles++;
-    
-    if (angle >= 0.0f && angle <= M_PI_2) {
-        angles_0_to_pi2++;
-    } else if (angle > M_PI_2 && angle <= M_PI) {
-        angles_pi2_to_pi++;
-    }
-    
-    if (total_angles % 1000 == 0) {
-        printf("STATS: Total angles=%d, [0,π/2]=%d (%.1f%%), (π/2,π]=%d (%.1f%%)\n", 
-               total_angles, angles_0_to_pi2, 100.0f*angles_0_to_pi2/total_angles,
-               angles_pi2_to_pi, 100.0f*angles_pi2_to_pi/total_angles);
+        printf("WARNING: Angle out of [0, π] range: angle=%.6f\n", angle);
     }
 
     return angle;
@@ -306,10 +282,8 @@ __device__ inline DualBox constructDualBoxes(
     float left_rect_x, left_rect_y, left_rect_width, left_rect_height;
     float right_rect_x, right_rect_y, right_rect_width, right_rect_height;
 
-    printf("DEBUG: constructDualBoxes - theta=%.6f, M_PI_2=%.6f\n", theta, M_PI_2);
     if (theta >= 0 && theta <= M_PI_2) // 0到90度对应0到π/2弧度
     {
-        printf("DEBUG: Using first branch (theta in [0, π/2])\n");
         left_rect_x = snug_min_x;
         left_rect_y = snug_min_y;
         left_rect_width = center.x - snug_min_x;
@@ -321,8 +295,6 @@ __device__ inline DualBox constructDualBoxes(
         right_rect_height = snug_max_y - center.y;
     }
     else // Corresponds to Python's theta > 90
-    {
-        printf("DEBUG: Using second branch (theta in (π/2, π])\n");
     {
         left_rect_x = snug_min_x;
         left_rect_y = center.y;
