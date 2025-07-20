@@ -484,6 +484,14 @@ __device__ inline uint32_t duplicateToTilesTouched(
     float theta = computeTiltAngle(cov2d);
     float eccentricity = computeEccentricity(con_o);
 
+    // 计算判别式和阈值
+    float disc = con_o.y * con_o.y - con_o.x * con_o.z;
+    if (con_o.x <= 0 || con_o.z <= 0 || disc >= 0) {
+        return 0;
+    }
+
+    float t = 2.0f * logf(con_o.w * 255.0f);
+
     // 保持现有逻辑不变
     QuadBox quad_box = constructQuadBoxes(con_o, disc, t, p, theta, eccentricity);
 
