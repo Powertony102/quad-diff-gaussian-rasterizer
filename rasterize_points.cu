@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <cuda_runtime_api.h>
 #include <memory>
+#include "cuda_rasterizer/adam.h"
 #include "cuda_rasterizer/config.h"
 #include "cuda_rasterizer/rasterizer.h"
 #include <fstream>
@@ -109,7 +110,7 @@ RasterizeGaussiansCUDA(
 			tan_fovx,
 			tan_fovy,
 			prefiltered,
-		kernel_times.contiguous().data<float>(),
+			kernel_times.contiguous().data<float>(),
 			out_color.contiguous().data<float>(),
 			radii.contiguous().data<int>(),
 			debug);
@@ -198,13 +199,13 @@ RasterizeGaussiansBackwardCUDA(
 	}
 
 	return std::make_tuple(dL_dmeans2D, dL_dcolors, dL_dopacity, dL_dmeans3D, dL_dcov3D, dL_dsh, dL_dscales, dL_drotations, dL_dG2);
-	}
+}
 
-	torch::Tensor markVisible(
-			torch::Tensor& means3D,
-			torch::Tensor& viewmatrix,
-			torch::Tensor& projmatrix)
-	{ 
+torch::Tensor markVisible(
+		torch::Tensor& means3D,
+		torch::Tensor& viewmatrix,
+		torch::Tensor& projmatrix)
+{ 
 	const int P = means3D.size(0);
 
 	torch::Tensor present = torch::full({P}, false, means3D.options().dtype(at::kBool));
@@ -219,4 +220,31 @@ RasterizeGaussiansBackwardCUDA(
 	}
 
 	return present;
+}
+
+void adamUpdate(
+	torch::Tensor &param,
+	torch::Tensor &param_grad,
+	torch::Tensor &exp_avg,
+	torch::Tensor &exp_avg_sq,
+	torch::Tensor &visible,
+	const float lr,
+	const float b1,
+	const float b2,
+	const float eps,
+	const uint32_t N,
+	const uint32_t M
+){
+	ADAM::adamUpdate(
+		param.contiguous().data<float>(),
+		param_grad.contiguous().data<float>(),
+		exp_avg.contiguous().data<float>(),
+		exp_avg_sq.contiguous().data<float>(),
+		visible.contiguous().data<bool>(),
+		lr,
+		b1,
+		b2,
+		eps,
+		N,
+		M);
 }

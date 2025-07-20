@@ -226,7 +226,6 @@ class GaussianRasterizer(nn.Module):
 
         return color, radii, kernel_times
 
-
 class SparseGaussianAdam(torch.optim.Adam):
     def __init__(self, params, lr, eps):
         super().__init__(params=params, lr=lr, eps=eps)
@@ -254,4 +253,5 @@ class SparseGaussianAdam(torch.optim.Adam):
             exp_avg_sq = stored_state["exp_avg_sq"]
             M = param.numel() // N
             _C.adamUpdate(param, param.grad, exp_avg, exp_avg_sq, visibility, lr, 0.9, 0.999, eps, N, M)
+
 
