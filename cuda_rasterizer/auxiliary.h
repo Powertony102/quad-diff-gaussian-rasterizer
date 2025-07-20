@@ -16,6 +16,11 @@
 #include "stdio.h"
 #include <cstdint>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#define M_PI_2 1.5707963267948966f
+#endif
+
 #define BLOCK_SIZE (BLOCK_X * BLOCK_Y)
 #define NUM_WARPS (BLOCK_SIZE/32)
 
@@ -177,7 +182,12 @@ __device__ inline float computeTiltAngle(const float3& cov2d) {
     register float denominator = cov2d.x - cov2d.z;
     
     // Use fast GPU atan2 function with optimal precision
-    return 0.5f * atan2f(numerator, denominator);
+    float angle = 0.5f * atan2f(numerator, denominator);
+    
+    if (angle < 0.0f) {
+        angle += M_PI;
+    }
+    return angle;
 }
 
 // Compute eccentricity of a 2D Gaussian ellipse
@@ -306,11 +316,6 @@ __device__ inline ExtremePoints computeExtremePoints(
 
     return ext;
 }
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846f
-#define M_PI_2 1.5707963267948966f
-#endif
 
 // Construct dual asymmetric AABBs using extreme points and center with enhanced error handling
 // Implements left-right partitioning based on Gaussian center x-coordinate
