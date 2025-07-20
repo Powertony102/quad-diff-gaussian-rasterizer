@@ -258,20 +258,20 @@ __device__ inline QuadBox constructQuadBoxes(
     float2 bbox_argmin = { center.y - y_term, center.x - x_term };
     float2 bbox_argmax = { center.y + y_term, center.x + x_term };
 
-    float2 bbox_min = {
-      computeEllipseIntersection(con_o, disc, t, center, true, bbox_argmin.x).x,
-      computeEllipseIntersection(con_o, disc, t, center, false, bbox_argmin.y).x
-    };
-    float2 bbox_max = {
-      computeEllipseIntersection(con_o, disc, t, center, true, bbox_argmax.x).y,
-      computeEllipseIntersection(con_o, disc, t, center, false, bbox_argmax.y).y
-    };
+    // float2 bbox_min = {
+    //   computeEllipseIntersection(con_o, disc, t, center, true, bbox_argmin.x).x,
+    //   computeEllipseIntersection(con_o, disc, t, center, false, bbox_argmin.y).x
+    // };
+    // float2 bbox_max = {
+    //   computeEllipseIntersection(con_o, disc, t, center, true, bbox_argmax.x).y,
+    //   computeEllipseIntersection(con_o, disc, t, center, false, bbox_argmax.y).y
+    // };
 
     // 使用精确计算的边界构造 snugbox
-    const float snug_min_x = bbox_min.x;
-    const float snug_max_x = bbox_max.x;
-    const float snug_min_y = bbox_min.y;
-    const float snug_max_y = bbox_max.y;
+    const float snug_min_x = bbox_argmin.y;
+    const float snug_max_x = bbox_argmax.y;
+    const float snug_min_y = bbox_argmin.x;
+    const float snug_max_y = bbox_argmax.x;
 
     // Calculate extension coefficient f(e,theta)
     // f(e,theta) = 1 / sqrt(1 + (e^4 / (4*(1-e^2))) * sin^2(2*theta))
@@ -490,10 +490,10 @@ __device__ inline uint32_t duplicateToTilesTouched(
         return 0;
     }
 
-    // 检查 opacity 是否太小，如果 opacity < 1/255，直接跳过
-    if (con_o.w < 1.0f / 255.0f) {
-        return 0;
-    }
+    // // 检查 opacity 是否太小，如果 opacity < 1/255，直接跳过
+    // if (con_o.w < 1.0f / 255.0f) {
+    //     return 0;
+    // }
 
     float t = 2.0f * logf(con_o.w * 255.0f);
 
