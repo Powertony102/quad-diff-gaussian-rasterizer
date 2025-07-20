@@ -650,6 +650,8 @@ __device__ inline uint32_t duplicateToTilesTouched(
     float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
     float theta = computeTiltAngle(cov2d);
     float eccentricity = computeEccentricity(con_o);
+
+    float dynamic_coeff = sqrtf (2.0f * logf(con_o.w * 255.0f));
     
     // Extract ellipse parameters a and b from con_o
     // con_o represents the inverse covariance matrix: [[A, B], [B, C]]
@@ -682,8 +684,8 @@ __device__ inline uint32_t duplicateToTilesTouched(
     float lambda_min = (trace - sqrt_disc) / 2.0f;
     
     // a and b are the square roots of the eigenvalues
-    float a = sqrtf(lambda_max) * 3.5f;
-    float b = sqrtf(lambda_min) * 3.5f;
+    float a = sqrtf(lambda_max) * dynamic_coeff;
+    float b = sqrtf(lambda_min) * dynamic_coeff;
     
     // Use bounding rectangle instead of ellipse equation extremes
     ExtremePoints extremes = computeBoundingRectangle(p, a, b, theta);
