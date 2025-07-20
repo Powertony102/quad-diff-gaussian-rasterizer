@@ -93,7 +93,7 @@ __forceinline__ __device__ float3 transformVec4x3Transpose(const float3& p, cons
 __forceinline__ __device__ float dnormvdz(float3 v, float3 dv)
 {
 	float sum2 = v.x * v.x + v.y * v.y + v.z * v.z;
-	float invsum32 = 1.0f / sqrt(sum2 * sum2 * sum2);
+	float invsum32 = 1.0f / sqrtf(sum2 * sum2 * sum2);
 	float dnormvdz = (-v.x * v.z * dv.x - v.y * v.z * dv.y + (sum2 - v.z * v.z) * dv.z) * invsum32;
 	return dnormvdz;
 }
@@ -101,7 +101,7 @@ __forceinline__ __device__ float dnormvdz(float3 v, float3 dv)
 __forceinline__ __device__ float3 dnormvdv(float3 v, float3 dv)
 {
 	float sum2 = v.x * v.x + v.y * v.y + v.z * v.z;
-	float invsum32 = 1.0f / sqrt(sum2 * sum2 * sum2);
+	float invsum32 = 1.0f / sqrtf(sum2 * sum2 * sum2);
 
 	float3 dnormvdv;
 	dnormvdv.x = ((+sum2 - v.x * v.x) * dv.x - v.y * v.x * dv.y - v.z * v.x * dv.z) * invsum32;
@@ -113,7 +113,7 @@ __forceinline__ __device__ float3 dnormvdv(float3 v, float3 dv)
 __forceinline__ __device__ float4 dnormvdv(float4 v, float4 dv)
 {
 	float sum2 = v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
-	float invsum32 = 1.0f / sqrt(sum2 * sum2 * sum2);
+	float invsum32 = 1.0f / sqrtf(sum2 * sum2 * sum2);
 
 	float4 vdv = { v.x * dv.x, v.y * dv.y, v.z * dv.z, v.w * dv.w };
 	float vdv_sum = vdv.x + vdv.y + vdv.z + vdv.w;
@@ -139,7 +139,7 @@ __device__ inline float2 computeEllipseIntersection(
     float coeff = isY ? con_o.x : con_o.z;
 
     float h = coord - p_u;  // h = y - p.y for y, x - p.x for x
-    float sqrt_term = sqrt(disc * h * h + t * coeff);
+    float sqrt_term = sqrtf(disc * h * h + t * coeff);
 
     return {
       (-con_o.y * h - sqrt_term) / coeff + p_v,
@@ -250,10 +250,10 @@ __device__ inline QuadBox constructQuadBoxes(
     quad_box.valid = false;
 
     // 使用 computeEllipseIntersection 计算精确的椭圆边界
-    float x_term = sqrt(-(con_o.y * con_o.y * t) / (disc * con_o.x));
-    x_term = (con_o.y < 0) ? x_term : -x_term;
-    float y_term = sqrt(-(con_o.y * con_o.y * t) / (disc * con_o.z));
-    y_term = (con_o.y < 0) ? y_term : -y_term;
+    float x_term = sqrtf(-(con_o.y * con_o.y * t) / (disc * con_o.x));
+    x_term = (con_o.y < 0.0f) ? x_term : -x_term;
+    float y_term = sqrtf(-(con_o.y * con_o.y * t) / (disc * con_o.z));
+    y_term = (con_o.y < 0.0f) ? y_term : -y_term;
 
     float2 bbox_argmin = { center.y - y_term, center.x - x_term };
     float2 bbox_argmax = { center.y + y_term, center.x + x_term };
@@ -486,7 +486,12 @@ __device__ inline uint32_t duplicateToTilesTouched(
 
     // 计算判别式和阈值
     float disc = con_o.y * con_o.y - con_o.x * con_o.z;
-    if (con_o.x <= 0 || con_o.z <= 0 || disc >= 0) {
+    if (con_o.x <= 0.0f || con_o.z <= 0.0f || disc >= 0.0f) {
+        return 0;
+    }
+
+    // 检查 opacity 是否太小，如果 opacity < 1/255，直接跳过
+    if (con_o.w < 1.0f / 255.0f) {
         return 0;
     }
 
