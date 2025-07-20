@@ -499,21 +499,21 @@ __device__ inline uint32_t duplicateToTilesTouched(
     float lambda_min = (trace - sqrt_disc) / 2.0f;
     
     // a and b are the square roots of the eigenvalues
-    float a = sqrtf(lambda_max);
-    float b = sqrtf(lambda_min);
+    float a = sqrtf(lambda_max) * 3.0f;
+    float b = sqrtf(lambda_min) * 3.0f;
     
     // Use bounding rectangle instead of ellipse equation extremes
     ExtremePoints extremes = computeBoundingRectangle(p, a, b, theta);
     
     DualBox dual_box = constructDualBoxes(extremes, p, theta, eccentricity);
 
-    // Output: DualBox/LeftRect/RightRect
-    printf("LeftRect/RightRect: %f/%f/%f/%f/%f/%f\n", 
-        dual_box.left_box.x, dual_box.left_box.y, dual_box.left_box.z, dual_box.left_box.w, 
-        dual_box.right_box.x, dual_box.right_box.y, dual_box.right_box.z, dual_box.right_box.w);
+    // // Output: DualBox/LeftRect/RightRect
+    // printf("LeftRect/RightRect: %f/%f/%f/%f/%f/%f\n", 
+    //     dual_box.left_box.x, dual_box.left_box.y, dual_box.left_box.z, dual_box.left_box.w, 
+    //     dual_box.right_box.x, dual_box.right_box.y, dual_box.right_box.z, dual_box.right_box.w);
 
-    // Output: Ellipse/A/B/C/Theta/Eccentricity
-    printf("Ellipse/A/B/C/Theta/Eccentricity: %f/%f/%f/%f/%f\n", A, B, C, theta, eccentricity);
+    // // Output: Ellipse/A/B/C/Theta/Eccentricity
+    // printf("Ellipse/A/B/C/Theta/Eccentricity: %f/%f/%f/%f/%f\n", A, B, C, theta, eccentricity);
     
     // Check for reasonable box sizes to prevent excessive tile generation
     // float left_box_area = (dual_box.left_box.z - dual_box.left_box.x) * 
