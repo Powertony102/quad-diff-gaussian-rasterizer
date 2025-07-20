@@ -647,62 +647,38 @@ __device__ inline uint32_t duplicateToTilesTouched(
     uint32_t* gaussian_values_unsorted
     )
 {
+    // 保留：计算 theta 和 eccentricity（用于 quadbox 构造）
     float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
     float theta = computeTiltAngle(cov2d);
     float eccentricity = computeEccentricity(con_o);
 
-    float dynamic_coeff = sqrtf (2.0f * logf(con_o.w * 255.0f));
-    
-    // Extract ellipse parameters a and b from con_o
-    // con_o represents the inverse covariance matrix: [[A, B], [B, C]]
-    // We need to compute the original covariance matrix and extract a, b
-    float A = con_o.x;
-    float B = con_o.y;
-    float C = con_o.z;
-    
-    // Compute determinant of the inverse covariance matrix
-    float det_inv = A * C - B * B;
-    
-    // The original covariance matrix is the inverse of [[A, B], [B, C]]
-    // For a 2x2 matrix [[a11, a12], [a21, a22]], the inverse is:
-    // [[a22, -a12], [-a21, a11]] / det
-    float cov_xx = C / det_inv;
-    float cov_xy = -B / det_inv;
-    float cov_yy = A / det_inv;
-    
-    // Extract a and b from the covariance matrix
-    // The covariance matrix represents the ellipse parameters after rotation
-    // We need to compute the principal axes a and b
-    float trace = cov_xx + cov_yy;
-    float det = cov_xx * cov_yy - cov_xy * cov_xy;
-    
-    // Eigenvalues are (trace ± sqrt(trace² - 4*det)) / 2
-    float discriminant = trace * trace - 4.0f * det;
-    float sqrt_disc = sqrtf(discriminant);
-    
-    float lambda_max = (trace + sqrt_disc) / 2.0f;
-    float lambda_min = (trace - sqrt_disc) / 2.0f;
-    
-    // a and b are the square roots of the eigenvalues
-    float a = sqrtf(lambda_max) * dynamic_coeff;
-    float b = sqrtf(lambda_min) * dynamic_coeff;
-    
-    // Use bounding rectangle instead of ellipse equation extremes
-    ExtremePoints extremes = computeBoundingRectangle(p, a, b, theta);
-    
-    // DualBox dual_box = constructDualBoxes(extremes, p, theta, eccentricity);
+    // 新增：直接计算椭圆边界（替换特征值分解法）
+    float disc = con_o.y * con_o.y - con_o.x * con_o.z;
+    if (con_o.x <= 0 || con_o.z <= 0 || disc >= 0) {
+        return 0;
+    }
 
+    float t = 2.0f * logf(con_o.w * 255.0f);
+
+    float x_term = sqrt(-(con_o.y * con_o.y * t) / (disc * con_o.x));
+    x_term = (con_o.y < 0) ? x_term : -x_term;
+    float y_term = sqrt(-(con_o.y * con_o.y * t) / (disc * con_o.z));
+    y_term = (con_o.y < 0) ? y_term : -y_term;
+
+    // 构造 ExtremePoints
+    ExtremePoints extremes;
+    extremes.x_extremes = make_float2(p.x - x_term, p.x + x_term);
+    extremes.y_extremes = make_float2(p.y - y_term, p.y + y_term);
+    extremes.x_coords_at_y_extremes = make_float2(p.x - x_term, p.x + x_term);
+    extremes.y_coords_at_x_extremes = make_float2(p.y - y_term, p.y + y_term);
+
+    // 保持现有逻辑不变
     QuadBox quad_box = constructQuadBoxes(extremes, p, theta, eccentricity);
 
     return generateUniqueTileIntersectionsQuad(
         quad_box, grid, idx, off, depth,
         gaussian_keys_unsorted, gaussian_values_unsorted
     );
-    
-    // Phase 5: Generate unique tile intersections using union logic with error handling
-    // Requirements: 1.4, 5.1, 5.2, 5.3, 5.4 - unique tile intersection generation
-    // return generateUniqueTileIntersections(dual_box, grid, idx, off, depth,
-    //                                      gaussian_keys_unsorted, gaussian_values_unsorted);
 }
 
 #define CHECK_CUDA(A, debug) \
