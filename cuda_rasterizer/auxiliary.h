@@ -188,10 +188,6 @@ __device__ inline float computeTiltAngle(const float3& cov2d) {
         angle += M_PI;
     }
 
-    if (angle > M_PI_2) {
-        printf("INFO: Angle in (π/2, π] range: angle=%.6f, M_PI_2=%.6f\n", angle, M_PI_2);
-    }
-
     return angle;
 }
 
@@ -324,6 +320,11 @@ __device__ inline DualBox constructDualBoxes(
     dual_box.left_box = make_float4(left_rect_x, left_rect_y, left_rect_x + left_rect_width, left_rect_y + left_rect_height);
     dual_box.right_box = make_float4(right_rect_x, right_rect_y, right_rect_x + right_rect_width, right_rect_y + right_rect_height);
     dual_box.valid = true;
+
+    // Output: Ellipse/Theta/Eccentricity/StretchFactor/LeftRect/RightRect
+    printf("Ellipse/Theta/Eccentricity/StretchFactor/LeftRect/RightRect: %f/%f/%f/%f/%f/%f/%f/%f\n", 
+        eccentricity, theta, stretch_factor, left_rect_x, left_rect_y, left_rect_width, left_rect_height, 
+        right_rect_x, right_rect_y, right_rect_width, right_rect_height);
     
     return dual_box;
 }
