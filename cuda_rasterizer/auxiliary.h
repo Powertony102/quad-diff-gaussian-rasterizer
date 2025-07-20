@@ -249,29 +249,14 @@ __device__ inline QuadBox constructQuadBoxes(
     QuadBox quad_box;
     quad_box.valid = false;
 
-    // 使用 computeEllipseIntersection 计算精确的椭圆边界
-    float x_term = sqrtf(-(con_o.y * con_o.y * t) / (disc * con_o.x));
-    x_term = (con_o.y < 0.0f) ? x_term : -x_term;
-    float y_term = sqrtf(-(con_o.y * con_o.y * t) / (disc * con_o.z));
-    y_term = (con_o.y < 0.0f) ? y_term : -y_term;
-
-    float2 bbox_argmin = { center.y - y_term, center.x - x_term };
-    float2 bbox_argmax = { center.y + y_term, center.x + x_term };
-
-    // float2 bbox_min = {
-    //   computeEllipseIntersection(con_o, disc, t, center, true, bbox_argmin.x).x,
-    //   computeEllipseIntersection(con_o, disc, t, center, false, bbox_argmin.y).x
-    // };
-    // float2 bbox_max = {
-    //   computeEllipseIntersection(con_o, disc, t, center, true, bbox_argmax.x).y,
-    //   computeEllipseIntersection(con_o, disc, t, center, false, bbox_argmax.y).y
-    // };
-
+    float x_extent = sqrtf(-t * con_o.z / disc);
+    float y_extent = sqrtf(-t * con_o.x / disc);
+    
     // 使用精确计算的边界构造 snugbox
-    const float snug_min_x = bbox_argmin.y;
-    const float snug_max_x = bbox_argmax.y;
-    const float snug_min_y = bbox_argmin.x;
-    const float snug_max_y = bbox_argmax.x;
+    const float snug_min_x = center.x - x_extent;
+    const float snug_max_x = center.x + x_extent;
+    const float snug_min_y = center.y - y_extent;
+    const float snug_max_y = center.y + y_extent;
 
     // Calculate extension coefficient f(e,theta)
     // f(e,theta) = 1 / sqrt(1 + (e^4 / (4*(1-e^2))) * sin^2(2*theta))
