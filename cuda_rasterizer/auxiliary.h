@@ -183,7 +183,7 @@ __device__ inline float computeTiltAngle(const float3& cov2d) {
     
     // Use fast GPU atan2 function with optimal precision
     float angle = 0.5f * atan2f(numerator, denominator);
-    
+
     if (angle < 0.0f) {
         angle += M_PI;
     }
@@ -245,75 +245,6 @@ __device__ inline ExtremePoints computeBoundingRectangle(
     ext.x_coords_at_y_extremes = make_float2(x_min, x_max);
     ext.y_coords_at_x_extremes = make_float2(y_min, y_max);
     
-    return ext;
-}
-
-// ---------------------------------------------------------------------------
-// Compute extreme points of ellipse using analytical, numerically-stable math
-// Ellipse:  A*(x-p.x)^2 + 2B*(x-p.x)*(y-p.y) + C*(y-p.y)^2 = t  (t>0)
-// ---------------------------------------------------------------------------
-__device__ inline ExtremePoints computeExtremePoints(
-    const float4& con_o,   // (A, B, C, opacity)
-    float disc,            // discriminant (B^2 - A*C)  < 0 for ellipse
-    float t,               // threshold on quadratic form (>0)
-    const float2& p)       // ellipse centre in image space
-{
-    ExtremePoints ext;
-
-    // -----------------------------------------------------------------------
-    // 1. Basic validation & safe defaults
-    // -----------------------------------------------------------------------
-    const float A = con_o.x;
-    const float B = con_o.y;
-    const float C = con_o.z;
-
-    // Initialise with centre to avoid uninitialised reads if ellipse invalid
-    ext.x_extremes              = make_float2(p.x, p.x);
-    ext.y_extremes              = make_float2(p.y, p.y);
-    ext.x_coords_at_y_extremes  = make_float2(p.x, p.x);
-    ext.y_coords_at_x_extremes  = make_float2(p.y, p.y);
-
-    // Quick reject: non-positive A/C, non-elliptic discriminant, non-positive t
-    if (A <= 0.0f || C <= 0.0f || disc >= 0.0f || t <= 0.0f)
-        return ext;
-
-    // -----------------------------------------------------------------------
-    // 2. Pre-compute safe denominators
-    //     denomX = A − B²/C , denomY = C − B²/A   (both must be > 0 for ellipse)
-    // -----------------------------------------------------------------------
-    const float denomX = A - (B * B) / C;
-    const float denomY = C - (B * B) / A;
-
-    if (denomX <= 0.0f || denomY <= 0.0f)   // degeneration guard
-        return ext;
-
-    // -----------------------------------------------------------------------
-    // 3. Compute u_max (Δx)  &  v_max (Δy) in local (u,v) space
-    // -----------------------------------------------------------------------
-    const float u_max = sqrtf(t / denomX);        // ≥ 0
-    const float v_max = sqrtf(t / denomY);        // ≥ 0
-
-    // Helper ratios (may be zero if B == 0, that is fine)
-    const float B_over_C = B / C;
-    const float B_over_A = B / A;
-
-    // -----------------------------------------------------------------------
-    // 4. Assemble extreme coordinates (global space)
-    // -----------------------------------------------------------------------
-    // -- x-direction extremes --
-    const float y_at_xmin = p.y +  B_over_C * u_max;   // corresponds to u = -u_max
-    const float y_at_xmax = p.y -  B_over_C * u_max;   // corresponds to u = +u_max
-
-    ext.x_extremes             = make_float2(p.x - u_max, p.x + u_max);
-    ext.y_coords_at_x_extremes = make_float2(y_at_xmin,   y_at_xmax);
-
-    // -- y-direction extremes --
-    const float x_at_ymin = p.x +  B_over_A * v_max;   // corresponds to v = -v_max
-    const float x_at_ymax = p.x -  B_over_A * v_max;   // corresponds to v = +v_max
-
-    ext.y_extremes             = make_float2(p.y - v_max, p.y + v_max);
-    ext.x_coords_at_y_extremes = make_float2(x_at_ymin,   x_at_ymax);
-
     return ext;
 }
 
