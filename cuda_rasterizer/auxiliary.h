@@ -14,6 +14,7 @@
 
 #include "config.h"
 #include "stdio.h"
+#include <cstdint>
 
 #define BLOCK_SIZE (BLOCK_X * BLOCK_Y)
 #define NUM_WARPS (BLOCK_SIZE/32)
@@ -136,7 +137,7 @@ __forceinline__ __device__ bool in_frustum(int idx,
 	// Bring points to screen space
 	float4 p_hom = transformPoint4x4(p_orig, projmatrix);
 	float p_w = 1.0f / (p_hom.w + 0.0000001f);
-	float3 p_proj = { p_hom.x * p_w, p_hom.y * p_w, p_hom.z * p_w };
+	// float3 p_proj = { p_hom.x * p_w, p_hom.y * p_w, p_hom.z * p_w }; // Commented out unused variable
 	p_view = transformPoint4x3(p_orig, viewmatrix);
 
 	if (p_view.z <= 0.2f)// || ((p_proj.x < -1.3 || p_proj.x > 1.3 || p_proj.y < -1.3 || p_proj.y > 1.3)))
@@ -563,10 +564,10 @@ __device__ inline uint32_t duplicateToTilesTouched(
     DualBox dual_box = constructDualBoxes(extremes, p, theta, eccentricity);
     
     // Check for reasonable box sizes to prevent excessive tile generation
-    float left_box_area = (dual_box.left_box.z - dual_box.left_box.x) * 
-                         (dual_box.left_box.w - dual_box.left_box.y);
-    float right_box_area = (dual_box.right_box.z - dual_box.right_box.x) * 
-                          (dual_box.right_box.w - dual_box.right_box.y);
+    // float left_box_area = (dual_box.left_box.z - dual_box.left_box.x) * 
+    //                      (dual_box.left_box.w - dual_box.left_box.y);
+    // float right_box_area = (dual_box.right_box.z - dual_box.right_box.x) * 
+    //                       (dual_box.right_box.w - dual_box.right_box.y);
     
     // Phase 5: Generate unique tile intersections using union logic with error handling
     // Requirements: 1.4, 5.1, 5.2, 5.3, 5.4 - unique tile intersection generation
