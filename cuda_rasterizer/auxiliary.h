@@ -188,9 +188,8 @@ __device__ inline float computeTiltAngle(const float3& cov2d) {
         angle += M_PI;
     }
 
-    // Simple debug output
-    if (angle < 0.0f || angle > M_PI) {
-        printf("WARNING: Angle out of [0, π] range: angle=%.6f\n", angle);
+    if (angle > M_PI_2) {
+        printf("INFO: Angle in (π/2, π] range: angle=%.6f, M_PI_2=%.6f\n", angle, M_PI_2);
     }
 
     return angle;
