@@ -321,10 +321,7 @@ __device__ inline DualBox constructDualBoxes(
     dual_box.right_box = make_float4(right_rect_x, right_rect_y, right_rect_x + right_rect_width, right_rect_y + right_rect_height);
     dual_box.valid = true;
 
-    // Output: Ellipse/Theta/Eccentricity/StretchFactor/LeftRect/RightRect
-    printf("Ellipse/Theta/Eccentricity/StretchFactor/LeftRect/RightRect: %f/%f/%f/%f/%f/%f/%f/%f\n", 
-        eccentricity, theta, stretch_factor, left_rect_x, left_rect_y, left_rect_width, left_rect_height, 
-        right_rect_x, right_rect_y, right_rect_width, right_rect_height);
+
     
     return dual_box;
 }
@@ -478,6 +475,9 @@ __device__ inline uint32_t duplicateToTilesTouched(
     float B = con_o.y;
     float C = con_o.z;
     
+    // Output: A/B/C/Theta/Eccentricity
+    printf("Ellipse/ABC/Theta/Eccentricity: %f/%f/%f/%f/%f\n", A, B, C, theta, eccentricity);
+    
     // Compute determinant of the inverse covariance matrix
     float det_inv = A * C - B * B;
     
@@ -509,6 +509,14 @@ __device__ inline uint32_t duplicateToTilesTouched(
     ExtremePoints extremes = computeBoundingRectangle(p, a, b, theta);
     
     DualBox dual_box = constructDualBoxes(extremes, p, theta, eccentricity);
+
+    // Output: DualBox/LeftRect/RightRect
+    printf("LeftRect/RightRect: %f/%f/%f/%f/%f/%f\n", 
+        dual_box.left_box.x, dual_box.left_box.y, dual_box.left_box.z, dual_box.left_box.w, 
+        dual_box.right_box.x, dual_box.right_box.y, dual_box.right_box.z, dual_box.right_box.w);
+
+    // Output: Ellipse/A/B/C/Theta/Eccentricity
+    printf("Ellipse/A/B/C/Theta/Eccentricity: %f/%f/%f/%f/%f\n", A, B, C, theta, eccentricity);
     
     // Check for reasonable box sizes to prevent excessive tile generation
     // float left_box_area = (dual_box.left_box.z - dual_box.left_box.x) * 
