@@ -172,15 +172,6 @@ struct DualBox {
     bool valid;        // Whether boxes are valid
 };
 
-// Structure to hold quad boxes
-struct DualBox {
-    float4 left_box; 
-    float4 left_small_box;  
-    float4 right_box;  
-    float4 right_small_box;
-    bool valid;        
-};
-
 // Compute tilt angle θ using covariance matrix eigenvalue approach - PERFORMANCE OPTIMIZED
 // θ = 0.5 * atan2(2σ_xy, σ_xx - σ_yy)
 // Requirements: 2.1, 4.1, 4.2 - O(1) complexity, efficient GPU trigonometric functions
@@ -330,7 +321,140 @@ __device__ inline DualBox constructDualBoxes(
     dual_box.right_box = make_float4(right_rect_x, right_rect_y, right_rect_x + right_rect_width, right_rect_y + right_rect_height);
     dual_box.valid = true;
 
+
+    
     return dual_box;
+}
+
+// ---- Unique Tile Intersection Generation System ---- //
+
+// Efficient AABB-tile intersection test - OPTIMIZED
+// Requirements: 1.4, 5.1, 5.2, 5.3, 5.4
+// Requirements: 4.2, 4.3 - minimize branching for better SIMD utilization
+__device__ inline bool tileIntersectsBox(
+    int tile_x, int tile_y,
+    const float4& box  // (min_x, min_y, max_x, max_y)
+) {
+    // Convert tile coordinates to pixel boundaries using efficient operations
+    float tile_min_x = __int2float_rn(tile_x * BLOCK_X);      // Use fast int-to-float conversion
+    float tile_max_x = __int2float_rn((tile_x + 1) * BLOCK_X);
+    float tile_min_y = __int2float_rn(tile_y * BLOCK_Y);
+    float tile_max_y = __int2float_rn((tile_y + 1) * BLOCK_Y);
+    
+    // AABB intersection test using bitwise operations to minimize branching
+    // boxes intersect if they overlap in both dimensions
+    bool x_overlap = (tile_min_x < box.z) & (tile_max_x > box.x);
+    bool y_overlap = (tile_min_y < box.w) & (tile_max_y > box.y);
+    
+    return x_overlap & y_overlap;
+}
+
+// Generate unique tile intersections using union-based approach with enhanced error handling
+// Prevents duplicate key-value pairs by processing each tile exactly once
+// Requirements: 1.4, 5.1, 5.2, 5.3, 5.4, 6.3 - unique tile intersection with boundary clamping
+__device__ inline uint32_t generateUniqueTileIntersections(
+    const DualBox& dual_box,
+    const dim3& grid,
+    uint32_t idx,
+    uint32_t off,
+    float depth,
+    uint64_t* gaussian_keys_unsorted,
+    uint32_t* gaussian_values_unsorted
+) {
+
+    // Compute union bounding rectangle of both boxes with validation
+    float union_min_x = fminf(dual_box.left_box.x, dual_box.right_box.x);
+    float union_min_y = fminf(dual_box.left_box.y, dual_box.right_box.y);
+    float union_max_x = fmaxf(dual_box.left_box.z, dual_box.right_box.z);
+    float union_max_y = fmaxf(dual_box.left_box.w, dual_box.right_box.w);
+    
+    // Convert to tile coordinates with enhanced boundary clamping
+    // Requirements: 6.3 - boundary clamping for screen-space coordinates
+    int rect_min_x = max(0, min((int)grid.x, (int)floorf(union_min_x / BLOCK_X)));
+    int rect_min_y = max(0, min((int)grid.y, (int)floorf(union_min_y / BLOCK_Y)));
+    int rect_max_x = max(0, min((int)grid.x, (int)ceilf(union_max_x / BLOCK_X)));
+    int rect_max_y = max(0, min((int)grid.y, (int)ceilf(union_max_y / BLOCK_Y)));
+    
+    // Additional safety bounds checking
+    rect_min_x = max(0, rect_min_x);
+    rect_min_y = max(0, rect_min_y);
+    rect_max_x = min((int)grid.x, rect_max_x);
+    rect_max_y = min((int)grid.y, rect_max_y);
+    
+    // If no tiles are touched, return 0
+    if (rect_min_x >= rect_max_x || rect_min_y >= rect_max_y) {
+        return 0;
+    }
+    
+    // Prevent excessive tile generation (safety check)
+    int total_tiles = (rect_max_x - rect_min_x) * (rect_max_y - rect_min_y);
+    const int MAX_TILES_PER_GAUSSIAN = 10000;  // Reasonable upper bound
+    if (total_tiles > MAX_TILES_PER_GAUSSIAN) {
+        return 0;  // Too many tiles, likely numerical error
+    }
+    
+    uint32_t tiles_count = 0;
+    
+    // Single-pass key generation with proper indexing and error handling
+    // Process each tile in the union rectangle exactly once
+    // Requirements: 5.1, 5.2, 5.3 - prevent duplicate key-value pairs
+    for (int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
+        for (int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
+            // Additional bounds checking within loop
+            if (tile_x < 0 || tile_x >= (int)grid.x || tile_y < 0 || tile_y >= (int)grid.y) {
+                continue;  // Skip invalid tile coordinates
+            }
+            
+            // Test intersection with either left box OR right box (union logic)
+            // Requirements: 1.4, 5.2 - logical OR operation for tile overlap
+            bool intersects_left = tileIntersectsBox(tile_x, tile_y, dual_box.left_box);
+            bool intersects_right = tileIntersectsBox(tile_x, tile_y, dual_box.right_box);
+            
+            if (intersects_left || intersects_right) {
+                tiles_count++;
+                
+                // Generate single key-value pair for this tile
+                // Requirements: 5.3, 5.4 - unique (tile_index, gaussian_index) pairs
+                if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                    // Validate tile coordinates before key generation
+                    uint64_t tile_id = (uint64_t)tile_y * grid.x + tile_x;
+                    
+                    // Check for potential overflow in tile ID calculation
+                    if (tile_id >= ((uint64_t)grid.x * grid.y)) {
+                        continue;  // Skip invalid tile ID
+                    }
+                    
+                    // Key format: | tile ID | depth |
+                    uint64_t key = tile_id;
+                    key <<= 32;
+                    key |= *((uint32_t*)&depth);
+                    
+                    gaussian_keys_unsorted[off] = key;
+                    gaussian_values_unsorted[off] = idx;
+                    off++;
+                }
+            }
+        }
+    }
+    
+    return tiles_count;
+}
+
+__device__ inline float2 computeEllipseIntersection(
+    const float4 con_o, const float disc, const float t, const float2 p,
+    const bool isY, const float coord)
+{
+    float p_u = isY ? p.y : p.x;
+    float p_v = isY ? p.x : p.y;
+    float coeff = isY ? con_o.x : con_o.z;
+
+    float h = coord - p_u;  // h = y - p.y for y, x - p.x for x
+    float sqrt_term = sqrt(disc * h * h + t * coeff);
+
+    return {
+      (-con_o.y * h - sqrt_term) / coeff + p_v,
+      (-con_o.y * h + sqrt_term) / coeff + p_v
+    };
 }
 
 __device__ inline QuadBox constructQuadBoxes(
@@ -434,122 +558,6 @@ __device__ inline QuadBox constructQuadBoxes(
     
     return quad_box;
 }
-
-// ---- Unique Tile Intersection Generation System ---- //
-
-// Efficient AABB-tile intersection test - OPTIMIZED
-// Requirements: 1.4, 5.1, 5.2, 5.3, 5.4
-// Requirements: 4.2, 4.3 - minimize branching for better SIMD utilization
-__device__ inline bool tileIntersectsBox(
-    int tile_x, int tile_y,
-    const float4& box  // (min_x, min_y, max_x, max_y)
-) {
-    // Convert tile coordinates to pixel boundaries using efficient operations
-    float tile_min_x = __int2float_rn(tile_x * BLOCK_X);      // Use fast int-to-float conversion
-    float tile_max_x = __int2float_rn((tile_x + 1) * BLOCK_X);
-    float tile_min_y = __int2float_rn(tile_y * BLOCK_Y);
-    float tile_max_y = __int2float_rn((tile_y + 1) * BLOCK_Y);
-    
-    // AABB intersection test using bitwise operations to minimize branching
-    // boxes intersect if they overlap in both dimensions
-    bool x_overlap = (tile_min_x < box.z) & (tile_max_x > box.x);
-    bool y_overlap = (tile_min_y < box.w) & (tile_max_y > box.y);
-    
-    return x_overlap & y_overlap;
-}
-
-// Generate unique tile intersections using union-based approach with enhanced error handling
-// Prevents duplicate key-value pairs by processing each tile exactly once
-// Requirements: 1.4, 5.1, 5.2, 5.3, 5.4, 6.3 - unique tile intersection with boundary clamping
-/*
-__device__ inline uint32_t generateUniqueTileIntersections(
-    const DualBox& dual_box,
-    const dim3& grid,
-    uint32_t idx,
-    uint32_t off,
-    float depth,
-    uint64_t* gaussian_keys_unsorted,
-    uint32_t* gaussian_values_unsorted
-) {
-
-    // Compute union bounding rectangle of both boxes with validation
-    float union_min_x = fminf(dual_box.left_box.x, dual_box.right_box.x);
-    float union_min_y = fminf(dual_box.left_box.y, dual_box.right_box.y);
-    float union_max_x = fmaxf(dual_box.left_box.z, dual_box.right_box.z);
-    float union_max_y = fmaxf(dual_box.left_box.w, dual_box.right_box.w);
-    
-    // Convert to tile coordinates with enhanced boundary clamping
-    // Requirements: 6.3 - boundary clamping for screen-space coordinates
-    int rect_min_x = max(0, min((int)grid.x, (int)floorf(union_min_x / BLOCK_X)));
-    int rect_min_y = max(0, min((int)grid.y, (int)floorf(union_min_y / BLOCK_Y)));
-    int rect_max_x = max(0, min((int)grid.x, (int)ceilf(union_max_x / BLOCK_X)));
-    int rect_max_y = max(0, min((int)grid.y, (int)ceilf(union_max_y / BLOCK_Y)));
-    
-    // Additional safety bounds checking
-    rect_min_x = max(0, rect_min_x);
-    rect_min_y = max(0, rect_min_y);
-    rect_max_x = min((int)grid.x, rect_max_x);
-    rect_max_y = min((int)grid.y, rect_max_y);
-    
-    // If no tiles are touched, return 0
-    if (rect_min_x >= rect_max_x || rect_min_y >= rect_max_y) {
-        return 0;
-    }
-    
-    // Prevent excessive tile generation (safety check)
-    int total_tiles = (rect_max_x - rect_min_x) * (rect_max_y - rect_min_y);
-    const int MAX_TILES_PER_GAUSSIAN = 10000;  // Reasonable upper bound
-    if (total_tiles > MAX_TILES_PER_GAUSSIAN) {
-        return 0;  // Too many tiles, likely numerical error
-    }
-    
-    uint32_t tiles_count = 0;
-    
-    // Single-pass key generation with proper indexing and error handling
-    // Process each tile in the union rectangle exactly once
-    // Requirements: 5.1, 5.2, 5.3 - prevent duplicate key-value pairs
-    for (int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
-        for (int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
-            // Additional bounds checking within loop
-            if (tile_x < 0 || tile_x >= (int)grid.x || tile_y < 0 || tile_y >= (int)grid.y) {
-                continue;  // Skip invalid tile coordinates
-            }
-            
-            // Test intersection with either left box OR right box (union logic)
-            // Requirements: 1.4, 5.2 - logical OR operation for tile overlap
-            bool intersects_left = tileIntersectsBox(tile_x, tile_y, dual_box.left_box);
-            bool intersects_right = tileIntersectsBox(tile_x, tile_y, dual_box.right_box);
-            
-            if (intersects_left || intersects_right) {
-                tiles_count++;
-                
-                // Generate single key-value pair for this tile
-                // Requirements: 5.3, 5.4 - unique (tile_index, gaussian_index) pairs
-                if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                    // Validate tile coordinates before key generation
-                    uint64_t tile_id = (uint64_t)tile_y * grid.x + tile_x;
-                    
-                    // Check for potential overflow in tile ID calculation
-                    if (tile_id >= ((uint64_t)grid.x * grid.y)) {
-                        continue;  // Skip invalid tile ID
-                    }
-                    
-                    // Key format: | tile ID | depth |
-                    uint64_t key = tile_id;
-                    key <<= 32;
-                    key |= *((uint32_t*)&depth);
-                    
-                    gaussian_keys_unsorted[off] = key;
-                    gaussian_values_unsorted[off] = idx;
-                    off++;
-                }
-            }
-        }
-    }
-    
-    return tiles_count;
-}
-*/
 
 __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     const QuadBox& quad_box,
@@ -696,7 +704,7 @@ __device__ inline uint32_t duplicateToTilesTouched(
         quad_box, grid, idx, off, depth,
         gaussian_keys_unsorted, gaussian_values_unsorted
     );
-    
+
     // Phase 5: Generate unique tile intersections using union logic with error handling
     // Requirements: 1.4, 5.1, 5.2, 5.3, 5.4 - unique tile intersection generation
     // return generateUniqueTileIntersections(dual_box, grid, idx, off, depth,
