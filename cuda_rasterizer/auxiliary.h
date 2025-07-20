@@ -157,14 +157,6 @@ __forceinline__ __device__ bool in_frustum(int idx,
 	return true;
 }
 
-// Structure to hold extreme points of an ellipse
-struct ExtremePoints {
-    float2 x_extremes;  // (x_min, x_max)
-    float2 y_extremes;  // (y_min, y_max)
-    float2 x_coords_at_y_extremes;  // (x1, x2) at (y_min, y_max)
-    float2 y_coords_at_x_extremes;  // (y1, y2) at (x_min, x_max)
-};
-
 // Structure to hold dual asymmetric AABBs
 struct DualBox {
     float4 left_box;   // (min_x, min_y, max_x, max_y)
@@ -229,124 +221,40 @@ __device__ inline float computeEccentricity(const float4& con_o) {
     return sqrtf(1.0f - ratio);
 }
 
-// Compute bounding rectangle of ellipse using geometric approach
-// This matches the original test.py method for consistency
-__device__ inline ExtremePoints computeBoundingRectangle(
-    const float2& center,
-    float a, float b, float theta_rad
-) {
-    ExtremePoints ext;
-    
-    // Calculate ellipse boundaries after rotation
-    float cos_theta = cosf(theta_rad);
-    float sin_theta = sinf(theta_rad);
-    
-    // Ellipse boundary calculation
-    float dx = sqrtf((a * cos_theta) * (a * cos_theta) + (b * sin_theta) * (b * sin_theta));
-    float dy = sqrtf((a * sin_theta) * (a * sin_theta) + (b * cos_theta) * (b * cos_theta));
-    
-    float x_min = center.x - dx;
-    float x_max = center.x + dx;
-    float y_min = center.y - dy;
-    float y_max = center.y + dy;
-    
-    ext.x_extremes = make_float2(x_min, x_max);
-    ext.y_extremes = make_float2(y_min, y_max);
-    ext.x_coords_at_y_extremes = make_float2(x_min, x_max);
-    ext.y_coords_at_x_extremes = make_float2(y_min, y_max);
-    
-    return ext;
-}
-
-// Construct dual asymmetric AABBs using extreme points and center with enhanced error handling
-// Implements left-right partitioning based on Gaussian center x-coordinate
-// Requirements: 1.2, 1.3, 2.3, 2.4, 2.5, 6.2, 6.3 - dual-box construction with error handling
-__device__ inline DualBox constructDualBoxes(
-    const ExtremePoints& extremes,
-    const float2& center,
-    float theta, // tilt angle in radians
-    float eccentricity
-) {
-    DualBox dual_box;
-    dual_box.valid = false;
-    
-    // Original snugbox boundaries for clamping
-    const float snug_min_x = extremes.x_extremes.x;
-    const float snug_max_x = extremes.x_extremes.y;
-    const float snug_min_y = extremes.y_extremes.x;
-    const float snug_max_y = extremes.y_extremes.y;
-
-    // Calculate extension coefficient f(e,theta)
-    float e_sq = eccentricity * eccentricity;
-    if (e_sq >= 1.0f) e_sq = 0.999f; // prevent division by zero
-    float sin_2theta = sinf(2.0f * theta);
-    float sin_2theta_sq = sin_2theta * sin_2theta;
-    float stretch_factor = 1.0f / sqrtf(1.0f + (e_sq * e_sq / (4.0f * (1.0f - e_sq))) * sin_2theta_sq);
-
-    float left_rect_x, left_rect_y, left_rect_width, left_rect_height;
-    float right_rect_x, right_rect_y, right_rect_width, right_rect_height;
-
-    if (theta >= 0 && theta <= M_PI_2) // 0到90度对应0到π/2弧度
-    {
-        left_rect_x = snug_min_x;
-        left_rect_y = snug_min_y;
-        left_rect_width = center.x - snug_min_x;
-        left_rect_height = center.y - snug_min_y;
-
-        right_rect_x = center.x;
-        right_rect_y = center.y;
-        right_rect_width = snug_max_x - center.x;
-        right_rect_height = snug_max_y - center.y;
-    }
-    else // Corresponds to Python's theta > 90
-    {
-        left_rect_x = snug_min_x;
-        left_rect_y = center.y;
-        left_rect_width = center.x - snug_min_x;
-        left_rect_height = snug_max_y - center.y;
-
-        right_rect_x = center.x;
-        right_rect_y = snug_min_y;
-        right_rect_width = snug_max_x - center.x;
-        right_rect_height = center.y - snug_min_y;
-    }
-    
-    // Extend rectangles
-    if (left_rect_width > 0)
-    {
-        float left_extension = left_rect_width * stretch_factor;
-        left_rect_width += left_extension;
-    }
-
-    if (right_rect_width > 0)
-    {
-        float right_extension = right_rect_width * stretch_factor;
-        right_rect_x -= right_extension;
-        right_rect_width += right_extension;
-    }
-    
-    // Store the constructed dual boxes
-    dual_box.left_box = make_float4(left_rect_x, left_rect_y, left_rect_x + left_rect_width, left_rect_y + left_rect_height);
-    dual_box.right_box = make_float4(right_rect_x, right_rect_y, right_rect_x + right_rect_width, right_rect_y + right_rect_height);
-    dual_box.valid = true;
-
-    return dual_box;
-}
-
 __device__ inline QuadBox constructQuadBoxes(
-    const ExtremePoints& extremes,
+    const float4& con_o,
+    const float disc,
+    const float t,
     const float2& center,
     float theta, // tilt angle in radians
     float eccentricity
 ) {
     QuadBox quad_box;
     quad_box.valid = false;
-    
-    // Original snugbox boundaries for clamping
-    const float snug_min_x = extremes.x_extremes.x;
-    const float snug_max_x = extremes.x_extremes.y;
-    const float snug_min_y = extremes.y_extremes.x;
-    const float snug_max_y = extremes.y_extremes.y;
+
+    // 使用 computeEllipseIntersection 计算精确的椭圆边界
+    float x_term = sqrt(-(con_o.y * con_o.y * t) / (disc * con_o.x));
+    x_term = (con_o.y < 0) ? x_term : -x_term;
+    float y_term = sqrt(-(con_o.y * con_o.y * t) / (disc * con_o.z));
+    y_term = (con_o.y < 0) ? y_term : -y_term;
+
+    float2 bbox_argmin = { center.y - y_term, center.x - x_term };
+    float2 bbox_argmax = { center.y + y_term, center.x + x_term };
+
+    float2 bbox_min = {
+      computeEllipseIntersection(con_o, disc, t, center, true, bbox_argmin.x).x,
+      computeEllipseIntersection(con_o, disc, t, center, false, bbox_argmin.y).x
+    };
+    float2 bbox_max = {
+      computeEllipseIntersection(con_o, disc, t, center, true, bbox_argmax.x).y,
+      computeEllipseIntersection(con_o, disc, t, center, false, bbox_argmax.y).y
+    };
+
+    // 使用精确计算的边界构造 snugbox
+    const float snug_min_x = bbox_min.x;
+    const float snug_max_x = bbox_max.x;
+    const float snug_min_y = bbox_min.y;
+    const float snug_max_y = bbox_max.y;
 
     // Calculate extension coefficient f(e,theta)
     // f(e,theta) = 1 / sqrt(1 + (e^4 / (4*(1-e^2))) * sin^2(2*theta))
@@ -458,99 +366,6 @@ __device__ inline bool tileIntersectsBox(
     return x_overlap & y_overlap;
 }
 
-// Generate unique tile intersections using union-based approach with enhanced error handling
-// Prevents duplicate key-value pairs by processing each tile exactly once
-// Requirements: 1.4, 5.1, 5.2, 5.3, 5.4, 6.3 - unique tile intersection with boundary clamping
-/*
-__device__ inline uint32_t generateUniqueTileIntersections(
-    const DualBox& dual_box,
-    const dim3& grid,
-    uint32_t idx,
-    uint32_t off,
-    float depth,
-    uint64_t* gaussian_keys_unsorted,
-    uint32_t* gaussian_values_unsorted
-) {
-
-    // Compute union bounding rectangle of both boxes with validation
-    float union_min_x = fminf(dual_box.left_box.x, dual_box.right_box.x);
-    float union_min_y = fminf(dual_box.left_box.y, dual_box.right_box.y);
-    float union_max_x = fmaxf(dual_box.left_box.z, dual_box.right_box.z);
-    float union_max_y = fmaxf(dual_box.left_box.w, dual_box.right_box.w);
-    
-    // Convert to tile coordinates with enhanced boundary clamping
-    // Requirements: 6.3 - boundary clamping for screen-space coordinates
-    int rect_min_x = max(0, min((int)grid.x, (int)floorf(union_min_x / BLOCK_X)));
-    int rect_min_y = max(0, min((int)grid.y, (int)floorf(union_min_y / BLOCK_Y)));
-    int rect_max_x = max(0, min((int)grid.x, (int)ceilf(union_max_x / BLOCK_X)));
-    int rect_max_y = max(0, min((int)grid.y, (int)ceilf(union_max_y / BLOCK_Y)));
-    
-    // Additional safety bounds checking
-    rect_min_x = max(0, rect_min_x);
-    rect_min_y = max(0, rect_min_y);
-    rect_max_x = min((int)grid.x, rect_max_x);
-    rect_max_y = min((int)grid.y, rect_max_y);
-    
-    // If no tiles are touched, return 0
-    if (rect_min_x >= rect_max_x || rect_min_y >= rect_max_y) {
-        return 0;
-    }
-    
-    // Prevent excessive tile generation (safety check)
-    int total_tiles = (rect_max_x - rect_min_x) * (rect_max_y - rect_min_y);
-    const int MAX_TILES_PER_GAUSSIAN = 10000;  // Reasonable upper bound
-    if (total_tiles > MAX_TILES_PER_GAUSSIAN) {
-        return 0;  // Too many tiles, likely numerical error
-    }
-    
-    uint32_t tiles_count = 0;
-    
-    // Single-pass key generation with proper indexing and error handling
-    // Process each tile in the union rectangle exactly once
-    // Requirements: 5.1, 5.2, 5.3 - prevent duplicate key-value pairs
-    for (int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
-        for (int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
-            // Additional bounds checking within loop
-            if (tile_x < 0 || tile_x >= (int)grid.x || tile_y < 0 || tile_y >= (int)grid.y) {
-                continue;  // Skip invalid tile coordinates
-            }
-            
-            // Test intersection with either left box OR right box (union logic)
-            // Requirements: 1.4, 5.2 - logical OR operation for tile overlap
-            bool intersects_left = tileIntersectsBox(tile_x, tile_y, dual_box.left_box);
-            bool intersects_right = tileIntersectsBox(tile_x, tile_y, dual_box.right_box);
-            
-            if (intersects_left || intersects_right) {
-                tiles_count++;
-                
-                // Generate single key-value pair for this tile
-                // Requirements: 5.3, 5.4 - unique (tile_index, gaussian_index) pairs
-                if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                    // Validate tile coordinates before key generation
-                    uint64_t tile_id = (uint64_t)tile_y * grid.x + tile_x;
-                    
-                    // Check for potential overflow in tile ID calculation
-                    if (tile_id >= ((uint64_t)grid.x * grid.y)) {
-                        continue;  // Skip invalid tile ID
-                    }
-                    
-                    // Key format: | tile ID | depth |
-                    uint64_t key = tile_id;
-                    key <<= 32;
-                    key |= *((uint32_t*)&depth);
-                    
-                    gaussian_keys_unsorted[off] = key;
-                    gaussian_values_unsorted[off] = idx;
-                    off++;
-                }
-            }
-        }
-    }
-    
-    return tiles_count;
-}
-*/
-
 __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     const QuadBox& quad_box,
     const dim3& grid,
@@ -640,6 +455,23 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     return tiles_count;
 }
 
+__device__ inline float2 computeEllipseIntersection(
+    const float4 con_o, const float disc, const float t, const float2 p,
+    const bool isY, const float coord)
+{
+    float p_u = isY ? p.y : p.x;
+    float p_v = isY ? p.x : p.y;
+    float coeff = isY ? con_o.x : con_o.z;
+
+    float h = coord - p_u;  // h = y - p.y for y, x - p.x for x
+    float sqrt_term = sqrt(disc * h * h + t * coeff);
+
+    return {
+      (-con_o.y * h - sqrt_term) / coeff + p_v,
+      (-con_o.y * h + sqrt_term) / coeff + p_v
+    };
+}
+
 __device__ inline uint32_t duplicateToTilesTouched(
     const float2 p, const float4 con_o, const dim3 grid,
     uint32_t idx, uint32_t off, float depth,
@@ -652,28 +484,8 @@ __device__ inline uint32_t duplicateToTilesTouched(
     float theta = computeTiltAngle(cov2d);
     float eccentricity = computeEccentricity(con_o);
 
-    // 新增：直接计算椭圆边界（替换特征值分解法）
-    float disc = con_o.y * con_o.y - con_o.x * con_o.z;
-    if (con_o.x <= 0 || con_o.z <= 0 || disc >= 0) {
-        return 0;
-    }
-
-    float t = 2.0f * logf(con_o.w * 255.0f);
-
-    float x_term = sqrt(-(con_o.y * con_o.y * t) / (disc * con_o.x));
-    x_term = (con_o.y < 0) ? x_term : -x_term;
-    float y_term = sqrt(-(con_o.y * con_o.y * t) / (disc * con_o.z));
-    y_term = (con_o.y < 0) ? y_term : -y_term;
-
-    // 构造 ExtremePoints
-    ExtremePoints extremes;
-    extremes.x_extremes = make_float2(p.x - x_term, p.x + x_term);
-    extremes.y_extremes = make_float2(p.y - y_term, p.y + y_term);
-    extremes.x_coords_at_y_extremes = make_float2(p.x - x_term, p.x + x_term);
-    extremes.y_coords_at_x_extremes = make_float2(p.y - y_term, p.y + y_term);
-
     // 保持现有逻辑不变
-    QuadBox quad_box = constructQuadBoxes(extremes, p, theta, eccentricity);
+    QuadBox quad_box = constructQuadBoxes(con_o, disc, t, p, theta, eccentricity);
 
     return generateUniqueTileIntersectionsQuad(
         quad_box, grid, idx, off, depth,
