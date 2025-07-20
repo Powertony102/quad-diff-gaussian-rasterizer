@@ -307,6 +307,11 @@ __device__ inline ExtremePoints computeExtremePoints(
     return ext;
 }
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846f
+#define M_PI_2 1.5707963267948966f
+#endif
+
 // Construct dual asymmetric AABBs using extreme points and center with enhanced error handling
 // Implements left-right partitioning based on Gaussian center x-coordinate
 // Requirements: 1.2, 1.3, 2.3, 2.4, 2.5, 6.2, 6.3 - dual-box construction with error handling
@@ -335,7 +340,7 @@ __device__ inline DualBox constructDualBoxes(
     float left_rect_x, left_rect_y, left_rect_width, left_rect_height;
     float right_rect_x, right_rect_y, right_rect_width, right_rect_height;
 
-    if (theta >= 0) // Corresponds to Python's 0 <= theta <= 90
+    if (theta >= 0 && theta <= M_PI_2) // 0到90度对应0到π/2弧度
     {
         left_rect_x = snug_min_x;
         left_rect_y = snug_min_y;
