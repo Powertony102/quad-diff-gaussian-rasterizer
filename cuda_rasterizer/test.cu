@@ -163,7 +163,6 @@ CudaRasterizer::ImageState CudaRasterizer::ImageState::fromChunk(char*& chunk, s
 	obtain(chunk, img.accum_alpha, N, 128);
 	obtain(chunk, img.n_contrib, N, 128);
 	obtain(chunk, img.ranges, N, 128);
-	obtain(chunk, img.invdepths, N, 128);  // 新增：分配invdepths内存
 	return img;
 }
 

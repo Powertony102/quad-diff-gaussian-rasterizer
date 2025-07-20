@@ -164,7 +164,6 @@ CudaRasterizer::ImageState CudaRasterizer::ImageState::fromChunk(char*& chunk, s
 	obtain(chunk, img.accum_alpha, N, 128);
 	obtain(chunk, img.n_contrib, N, 128);
 	obtain(chunk, img.ranges, N, 128);
-	obtain(chunk, img.invdepths, N, 128);  // 新增：分配invdepths内存
 	return img;
 }
 
@@ -207,7 +206,6 @@ int CudaRasterizer::Rasterizer::forward(
 	const bool prefiltered,
   float* kernel_times,
 	float* out_color,
-	float* invdepths,  // 新增：逆深度期望值输出
 	int* radii,
 	bool debug)
 {
@@ -339,9 +337,7 @@ int CudaRasterizer::Rasterizer::forward(
 		imgState.accum_alpha,
 		imgState.n_contrib,
 		background,
-		out_color,
-		geomState.depths,    // 新增：传递深度值
-		invdepths), debug)   // 新增：传递逆深度期望值
+		out_color), debug)
 
   // End Overall timer
   cudaEventRecord(overallStop, 0);

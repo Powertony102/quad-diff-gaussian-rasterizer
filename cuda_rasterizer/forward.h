@@ -59,9 +59,7 @@ namespace FORWARD
 		float* final_T,
 		uint32_t* n_contrib,
 		const float* bg_color,
-		float* out_color,
-		const float* depths,  // 新增：深度值
-		float* invdepths);  // 新增：逆深度期望值输出
+		float* out_color);
 }
 
 
