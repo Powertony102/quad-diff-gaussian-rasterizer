@@ -682,8 +682,8 @@ __device__ inline uint32_t duplicateToTilesTouched(
     float lambda_min = (trace - sqrt_disc) / 2.0f;
     
     // a and b are the square roots of the eigenvalues
-    float a = sqrtf(lambda_max) * 3.0f;
-    float b = sqrtf(lambda_min) * 3.0f;
+    float a = sqrtf(lambda_max) * 3.5f;
+    float b = sqrtf(lambda_min) * 3.5f;
     
     // Use bounding rectangle instead of ellipse equation extremes
     ExtremePoints extremes = computeBoundingRectangle(p, a, b, theta);
