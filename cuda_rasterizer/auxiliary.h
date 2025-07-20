@@ -173,7 +173,7 @@ struct DualBox {
 };
 
 // Structure to hold quad boxes
-struct DualBox {
+struct QuadBox {
     float4 left_box; 
     float4 left_small_box;  
     float4 right_box;  
