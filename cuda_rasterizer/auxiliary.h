@@ -475,9 +475,6 @@ __device__ inline uint32_t duplicateToTilesTouched(
     float B = con_o.y;
     float C = con_o.z;
     
-    // Output: A/B/C/Theta/Eccentricity
-    printf("Ellipse/ABC/Theta/Eccentricity: %f/%f/%f/%f/%f\n", A, B, C, theta, eccentricity);
-    
     // Compute determinant of the inverse covariance matrix
     float det_inv = A * C - B * B;
     
