@@ -360,6 +360,9 @@ __device__ inline DualBox constructDualBoxes(
         right_rect_height = center.y - snug_min_y;
     }
 
+    // Validation
+    stretch_factor = 1.0f;
+    
     // Extend rectangles
     if (left_rect_width > 0)
     {
