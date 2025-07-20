@@ -130,6 +130,23 @@ __forceinline__ __device__ float sigmoid(float x)
 	return 1.0f / (1.0f + expf(-x));
 }
 
+__device__ inline float2 computeEllipseIntersection(
+    const float4 con_o, const float disc, const float t, const float2 p,
+    const bool isY, const float coord)
+{
+    float p_u = isY ? p.y : p.x;
+    float p_v = isY ? p.x : p.y;
+    float coeff = isY ? con_o.x : con_o.z;
+
+    float h = coord - p_u;  // h = y - p.y for y, x - p.x for x
+    float sqrt_term = sqrt(disc * h * h + t * coeff);
+
+    return {
+      (-con_o.y * h - sqrt_term) / coeff + p_v,
+      (-con_o.y * h + sqrt_term) / coeff + p_v
+    };
+}
+
 __forceinline__ __device__ bool in_frustum(int idx,
 	const float* orig_points,
 	const float* viewmatrix,
@@ -453,23 +470,6 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     }
     
     return tiles_count;
-}
-
-__device__ inline float2 computeEllipseIntersection(
-    const float4 con_o, const float disc, const float t, const float2 p,
-    const bool isY, const float coord)
-{
-    float p_u = isY ? p.y : p.x;
-    float p_v = isY ? p.x : p.y;
-    float coeff = isY ? con_o.x : con_o.z;
-
-    float h = coord - p_u;  // h = y - p.y for y, x - p.x for x
-    float sqrt_term = sqrt(disc * h * h + t * coeff);
-
-    return {
-      (-con_o.y * h - sqrt_term) / coeff + p_v,
-      (-con_o.y * h + sqrt_term) / coeff + p_v
-    };
 }
 
 __device__ inline uint32_t duplicateToTilesTouched(
