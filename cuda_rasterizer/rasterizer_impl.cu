@@ -205,11 +205,10 @@ int CudaRasterizer::Rasterizer::forward(
 	const float* cam_pos,
 	const float tan_fovx, float tan_fovy,
 	const bool prefiltered,
-  float* kernel_times,
+    float* kernel_times,
 	float* out_color,
 	int* radii,
-	bool debug,
-	const int tile_size)
+	bool debug)
 {
   // Timers for functions
   cudaEvent_t overallStart, overallStop;
@@ -272,8 +271,7 @@ int CudaRasterizer::Rasterizer::forward(
 		geomState.conic_opacity,
 		tile_grid,
 		geomState.tiles_touched,
-		prefiltered,
-		BLOCK_X), debug)
+		prefiltered), debug)
 
 	// Compute prefix sum over full list of touched tile counts by Gaussians
 	// E.g., [2, 3, 0, 2, 1] -> [2, 5, 5, 7, 8]
@@ -335,8 +333,7 @@ int CudaRasterizer::Rasterizer::forward(
 		imgState.accum_alpha,
 		imgState.n_contrib,
 		background,
-		out_color,
-		BLOCK_X), debug)
+		out_color), debug)
 
   // End Overall timer
   cudaEventRecord(overallStop, 0);
@@ -382,8 +379,7 @@ void CudaRasterizer::Rasterizer::backward(
 	float* dL_dscale,
 	float* dL_drot,
 	float* dL_dG2,
-	bool debug,
-	const int tile_size)
+	bool debug)
 {
 	GeometryState geomState = GeometryState::fromChunk(geom_buffer, P);
 	BinningState binningState = BinningState::fromChunk(binning_buffer, R);
