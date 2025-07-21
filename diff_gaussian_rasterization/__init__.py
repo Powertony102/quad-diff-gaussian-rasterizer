@@ -9,9 +9,9 @@
 # For inquiries contact  george.drettakis@inria.fr
 #
 
-from typing import NamedTuple
-import torch.nn as nn
 import torch
+import math
+from torch import nn
 from . import _C
 
 def cpu_deep_copy_tuple(input_tuple):
@@ -158,19 +158,21 @@ class _RasterizeGaussians(torch.autograd.Function):
 
         return grads
 
-class GaussianRasterizationSettings(NamedTuple):
-    image_height: int
-    image_width: int 
-    tanfovx : float
-    tanfovy : float
-    bg : torch.Tensor
-    scale_modifier : float
-    viewmatrix : torch.Tensor
-    projmatrix : torch.Tensor
-    sh_degree : int
-    campos : torch.Tensor
-    prefiltered : bool
-    debug : bool
+class GaussianRasterizationSettings:
+    def __init__(self, image_height, image_width, tanfovx, tanfovy, bg, scale_modifier, viewmatrix, projmatrix, sh_degree, campos, prefiltered, debug, antialiasing=False):
+        self.image_height = image_height
+        self.image_width = image_width
+        self.tanfovx = tanfovx
+        self.tanfovy = tanfovy
+        self.bg = bg
+        self.scale_modifier = scale_modifier
+        self.viewmatrix = viewmatrix
+        self.projmatrix = projmatrix
+        self.sh_degree = sh_degree
+        self.campos = campos
+        self.prefiltered = prefiltered
+        self.debug = debug
+        self.antialiasing = antialiasing
 
 class GaussianRasterizer(nn.Module):
     def __init__(self, raster_settings):
@@ -211,7 +213,7 @@ class GaussianRasterizer(nn.Module):
             cov3D_precomp = torch.Tensor([])
 
         # Invoke C++/CUDA rasterization routine
-        color, radii, kernel_times = rasterize_gaussians(
+        return rasterize_gaussians(
             means3D,
             means2D,
             shs,
@@ -223,8 +225,6 @@ class GaussianRasterizer(nn.Module):
             scores,
             raster_settings, 
         )
-
-        return color, radii, kernel_times
 
 class SparseGaussianAdam(torch.optim.Adam):
     def __init__(self, params, lr, eps):
