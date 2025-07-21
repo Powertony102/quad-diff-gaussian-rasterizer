@@ -240,8 +240,7 @@ __global__ void preprocessCUDA(int P, int D, int M,
   uint32_t tiles_count = duplicateToTilesTouched(
       point_image, con_o, grid,
       0, 0, 0,
-      nullptr, nullptr,
-      tile_size);
+      nullptr, nullptr);
   if (tiles_count == 0)
     return;
 
