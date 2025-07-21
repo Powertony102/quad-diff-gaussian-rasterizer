@@ -111,11 +111,10 @@ RasterizeGaussiansCUDA(
 		tan_fovx,
 		tan_fovy,
 		prefiltered,
-    kernel_times.contiguous().data<float>(),
+        kernel_times.contiguous().data<float>(),
 		out_color.contiguous().data<float>(),
 		radii.contiguous().data<int>(),
-		debug,
-		BLOCK_X);
+		debug);
   }
   return std::make_tuple(rendered, out_color, radii, kernel_times, geomBuffer, binningBuffer, imgBuffer);
 }
@@ -198,8 +197,7 @@ std::tuple<torch::Tensor, torch::Tensor, torch::Tensor, torch::Tensor, torch::Te
 	  dL_dscales.contiguous().data<float>(),
 	  dL_drotations.contiguous().data<float>(),
 	  dL_dG2.contiguous().data<float>(),
-	  debug,
-	  BLOCK_X);
+	  debug);
   }
 
   return std::make_tuple(dL_dmeans2D, dL_dcolors, dL_dopacity, dL_dmeans3D, dL_dcov3D, dL_dsh, dL_dscales, dL_drotations, dL_dG2);
