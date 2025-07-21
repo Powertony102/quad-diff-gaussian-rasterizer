@@ -95,8 +95,7 @@ __global__ void duplicateWithKeys(
         points_xy[idx], con_o[idx], grid,
         idx, off, depths[idx],
         gaussian_keys_unsorted,
-        gaussian_values_unsorted,
-        tile_size);
+        gaussian_values_unsorted);
 	}
 }
 
