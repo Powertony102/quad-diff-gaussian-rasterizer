@@ -196,9 +196,17 @@ class GaussianRasterizer(nn.Module):
 
         # If shs and dc are provided, concatenate them.
         if shs is not None and dc is not None:
-            shs = torch.cat((dc.unsqueeze(1), shs), dim=1)
+            # Handle shape mismatch for concatenation
+            if dc.dim() == 2 and shs.dim() == 4:
+                # Reshape dc from [N, 3] to [N, 1, 1, 3] and expand to match shs dimensions
+                dc = dc.view(dc.shape[0], 1, 1, dc.shape[1]).expand(-1, 1, shs.shape[2], shs.shape[3])
+            shs = torch.cat((dc, shs), dim=1)
         elif shs is None and dc is not None:
-            shs = dc.unsqueeze(1)
+            # If only dc is provided, it might need to be reshaped as well if it's meant to be the full SH set
+            if dc.dim() == 2:
+                 shs = dc.unsqueeze(1) # Assuming it should be [N, 1, 3]
+            else:
+                 shs = dc
 
         if (shs is None and colors_precomp is None) or (shs is not None and colors_precomp is not None):
             raise Exception('Please provide excatly one of either SHs or precomputed colors!')
