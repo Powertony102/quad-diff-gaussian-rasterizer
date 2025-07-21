@@ -190,9 +190,15 @@ class GaussianRasterizer(nn.Module):
             
         return visible
 
-    def forward(self, means3D, means2D, opacities, scores, shs = None, colors_precomp = None, scales = None, rotations = None, cov3D_precomp = None):
+    def forward(self, means3D, means2D, opacities, scores=None, shs = None, dc = None, colors_precomp = None, scales = None, rotations = None, cov3D_precomp = None):
         
         raster_settings = self.raster_settings
+
+        # If shs and dc are provided, concatenate them.
+        if shs is not None and dc is not None:
+            shs = torch.cat((dc.unsqueeze(1), shs), dim=1)
+        elif shs is None and dc is not None:
+            shs = dc.unsqueeze(1)
 
         if (shs is None and colors_precomp is None) or (shs is not None and colors_precomp is not None):
             raise Exception('Please provide excatly one of either SHs or precomputed colors!')
