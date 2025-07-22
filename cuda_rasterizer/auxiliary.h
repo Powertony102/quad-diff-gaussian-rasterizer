@@ -417,12 +417,13 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
                 off++;
             }
         }
-    }
-    // 处理right_box覆盖的tile (不包括 rect_middle_x 不包括 rect_middle_y)
-    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.right_box.x / BLOCK_X)));
-    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.right_box.y / BLOCK_Y)));
-    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.right_box.z / BLOCK_X)));
-    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.right_box.w / BLOCK_Y)));
+    }  
+    // 处理right_small_box覆盖的tile (不包括 rect_middle_x 不包括 rect_middle_y)
+    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.right_small_box.x / BLOCK_X)));
+    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.right_small_box.y / BLOCK_Y)));
+    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.right_small_box.z / BLOCK_X)));
+    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.right_small_box.w / BLOCK_Y)));
+
 
     if (rect_min_x == rect_middle_x) {
         rect_min_x = rect_middle_x + 1; // 不包括 middle_x
@@ -449,12 +450,11 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
             }
         }
     }
-    // 处理right_small_box覆盖的tile (包括 rect_middle_x 包括 rect_middle_y ，不包括 (rect_middle_x,rect_middle_y))
-    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.right_small_box.x / BLOCK_X)));
-    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.right_small_box.y / BLOCK_Y)));
-    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.right_small_box.z / BLOCK_X)));
-    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.right_small_box.w / BLOCK_Y)));
-
+    // 处理right_box覆盖的tile(包括 rect_middle_x 包括 rect_middle_y ，不包括 (rect_middle_x,rect_middle_y)) 
+    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.right_box.x / BLOCK_X)));
+    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.right_box.y / BLOCK_Y)));
+    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.right_box.z / BLOCK_X)));
+    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.right_box.w / BLOCK_Y)));
 
     for(int tile_y = rect_min_y + 1; tile_y < rect_max_y; ++tile_y) {
         for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
