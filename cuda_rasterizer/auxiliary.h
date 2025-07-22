@@ -377,83 +377,115 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     uint64_t* gaussian_keys_unsorted,
     uint32_t* gaussian_values_unsorted
 ) {
-    // Compute union bounding rectangle of all four boxes with validation
-    float union_min_x = fminf(fminf(quad_box.left_box.x, quad_box.right_box.x),
-                             fminf(quad_box.left_small_box.x, quad_box.right_small_box.x));
-    float union_min_y = fminf(fminf(quad_box.left_box.y, quad_box.right_box.y),
-                             fminf(quad_box.left_small_box.y, quad_box.right_small_box.y));
-    float union_max_x = fmaxf(fmaxf(quad_box.left_box.z, quad_box.right_box.z),
-                             fmaxf(quad_box.left_small_box.z, quad_box.right_small_box.z));
-    float union_max_y = fmaxf(fmaxf(quad_box.left_box.w, quad_box.right_box.w),
-                             fmaxf(quad_box.left_small_box.w, quad_box.right_small_box.w));
-    
-    // Convert to tile coordinates with enhanced boundary clamping
-    int rect_min_x = max(0, min((int)grid.x, (int)floorf(union_min_x / BLOCK_X)));
-    int rect_min_y = max(0, min((int)grid.y, (int)floorf(union_min_y / BLOCK_Y)));
-    int rect_max_x = max(0, min((int)grid.x, (int)ceilf(union_max_x / BLOCK_X)));
-    int rect_max_y = max(0, min((int)grid.y, (int)ceilf(union_max_y / BLOCK_Y)));
-    
-    // Additional safety bounds checking
-    rect_min_x = max(0, rect_min_x);
-    rect_min_y = max(0, rect_min_y);
-    rect_max_x = min((int)grid.x, rect_max_x);
-    rect_max_y = min((int)grid.y, rect_max_y);
-    
-    // If no tiles are touched, return 0
-    if (rect_min_x >= rect_max_x || rect_min_y >= rect_max_y) {
-        return 0;
-    }
-    
-    // Prevent excessive tile generation (safety check)
-    int total_tiles = (rect_max_x - rect_min_x) * (rect_max_y - rect_min_y);
-    const int MAX_TILES_PER_GAUSSIAN = 10000;  // Reasonable upper bound
-    if (total_tiles > MAX_TILES_PER_GAUSSIAN) {
-        return 0;  // Too many tiles, likely numerical error
-    }
-    
+
     uint32_t tiles_count = 0;
+    // Compute union bounding rectangle of all four boxes with validation
     
-    // Single-pass key generation with proper indexing and error handling
-    // Process each tile in the union rectangle exactly once
-    for (int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
-        for (int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
-            // Additional bounds checking within loop
-            if (tile_x < 0 || tile_x >= (int)grid.x || tile_y < 0 || tile_y >= (int)grid.y) {
-                continue;  // Skip invalid tile coordinates
-            }
-            
-            // Test intersection with any of the four boxes (union logic)
-            bool intersects_left = tileIntersectsBox(tile_x, tile_y, quad_box.left_box);
-            bool intersects_right = tileIntersectsBox(tile_x, tile_y, quad_box.right_box);
-            bool intersects_left_small = tileIntersectsBox(tile_x, tile_y, quad_box.left_small_box);
-            bool intersects_right_small = tileIntersectsBox(tile_x, tile_y, quad_box.right_small_box);
-            
-            if (intersects_left || intersects_right || intersects_left_small || intersects_right_small) {
-                tiles_count++;
-                
-                // Generate single key-value pair for this tile
-                if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                    // Validate tile coordinates before key generation
-                    uint64_t tile_id = (uint64_t)tile_y * grid.x + tile_x;
-                    
-                    // Check for potential overflow in tile ID calculation
-                    if (tile_id >= ((uint64_t)grid.x * grid.y)) {
-                        continue;  // Skip invalid tile ID
-                    }
-                    
-                    // Key format: | tile ID | depth |
-                    uint64_t key = tile_id;
-                    key <<= 32;
-                    key |= *((uint32_t*)&depth);
-                    
-                    gaussian_keys_unsorted[off] = key;
-                    gaussian_values_unsorted[off] = idx;
-                    off++;
-                }
+    float middle_x = (quad_box.left_box.x + quad_box.right_box.z) * 0.5f;
+    float middle_y = (quad_box.left_box.y + quad_box.right_box.w) * 0.5f;
+    
+    int rect_middle_x = max(0, min((int)grid.x, (int)floorf(middle_x / BLOCK_X)));
+    int rect_middle_y = max(0, min((int)grid.y, (int)floorf(middle_y / BLOCK_Y)));
+    
+    // 处理left_box覆盖的tile (包括 rect_middle_x 包括 rect_middle_y)
+    int rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.left_box.x / BLOCK_X)));
+    int rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.left_box.y / BLOCK_Y)));
+    int rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.left_box.z / BLOCK_X)));
+    int rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.left_box.w / BLOCK_Y)));
+
+    for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
+        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
+            ++tiles_count;
+            // 处理左侧大矩形的tile
+            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
+                gaussian_keys_unsorted[off] = key;
+                gaussian_values_unsorted[off] = idx;
+                off++;
             }
         }
     }
+    // 处理left_small_box覆盖的tile (包括 rect_middle_x 不包括 rect_middle_y)
+    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.left_small_box.x / BLOCK_X)));
+    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.left_small_box.y / BLOCK_Y)));
+    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.left_small_box.z / BLOCK_X)));
+    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.left_small_box.w / BLOCK_Y)));
+
+    if (rect_min_y == rect_middle_y) {
+        rect_min_y = rect_middle_y + 1; // 不包括 middle_y
+    }
+    if (rect_max_y == rect_middle_y + 1) {
+        rect_max_y = rect_middle_y; // 不包括 middle_y
+    }
+    for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
+        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
+            ++tiles_count;
+            // 处理左侧小矩形的tile
+            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
+                gaussian_keys_unsorted[off] = key;
+                gaussian_values_unsorted[off] = idx;
+                off++;
+            }
+        }
+    }
+    // 处理right_box覆盖的tile (不包括 rect_middle_x 包括 rect_middle_y)
+    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.right_box.x / BLOCK_X)));
+    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.right_box.y / BLOCK_Y)));
+    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.right_box.z / BLOCK_X)));
+    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.right_box.w / BLOCK_Y)));
+
+    if (rect_min_x == rect_middle_x) {
+        rect_min_x = rect_middle_x + 1; // 不包括 middle_x
+    }
+    if (rect_max_x == rect_middle_x + 1) {
+        rect_max_x = rect_middle_x; // 不包括 middle_x
+    }
     
+    for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
+        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
+            ++tiles_count;
+            // 处理右侧大矩形的tile
+            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
+                gaussian_keys_unsorted[off] = key;
+                gaussian_values_unsorted[off] = idx;
+                off++;
+            }
+        }
+    }
+    // 处理right_small_box覆盖的tile (不包括 rect_middle_x 不包括 rect_middle_y)
+    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.right_small_box.x / BLOCK_X)));
+    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.right_small_box.y / BLOCK_Y)));
+    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.right_small_box.z / BLOCK_X)));
+    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.right_small_box.w / BLOCK_Y)));
+
+    if (rect_min_x == rect_middle_x) {
+        rect_min_x = rect_middle_x + 1; // 不包括 middle_x
+    }
+    if (rect_max_x == rect_middle_x + 1) {
+        rect_max_x = rect_middle_x; // 不包括 middle_x
+    }
+    if (rect_min_y == rect_middle_y) {
+        rect_min_y = rect_middle_y + 1; // 不包括 middle_y
+    }
+    if (rect_max_y == rect_middle_y + 1) {
+        rect_max_y = rect_middle_y; // 不包括 middle_y
+    }
+    for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
+        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
+            ++tiles_count;
+            // 处理右侧小矩形的tile
+            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
+                gaussian_keys_unsorted[off] = key;
+                gaussian_values_unsorted[off] = idx;
+                off++;
+            }
+        }
+    }
+
+
     return tiles_count;
 }
 
