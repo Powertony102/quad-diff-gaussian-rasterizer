@@ -471,7 +471,7 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     rect_max_y = min( rect_max_y , rect_min_y + 1);
 
     for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
-        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
+        for(int tile_x = rect_min_x + 1; tile_x < rect_max_x; ++tile_x) {
             ++tiles_count;
             // 处理右侧小矩形的tile
             if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
