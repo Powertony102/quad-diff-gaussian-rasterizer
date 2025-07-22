@@ -350,24 +350,6 @@ __device__ inline QuadBox constructQuadBoxes(
 // Efficient AABB-tile intersection test - OPTIMIZED
 // Requirements: 1.4, 5.1, 5.2, 5.3, 5.4
 // Requirements: 4.2, 4.3 - minimize branching for better SIMD utilization
-__device__ inline bool tileIntersectsBox(
-    int tile_x, int tile_y,
-    const float4& box  // (min_x, min_y, max_x, max_y)
-) {
-    // Convert tile coordinates to pixel boundaries using efficient operations
-    float tile_min_x = __int2float_rn(tile_x * BLOCK_X);      // Use fast int-to-float conversion
-    float tile_max_x = __int2float_rn((tile_x + 1) * BLOCK_X);
-    float tile_min_y = __int2float_rn(tile_y * BLOCK_Y);
-    float tile_max_y = __int2float_rn((tile_y + 1) * BLOCK_Y);
-    
-    // AABB intersection test using bitwise operations to minimize branching
-    // boxes intersect if they overlap in both dimensions
-    bool x_overlap = (tile_min_x < box.z) & (tile_max_x > box.x);
-    bool y_overlap = (tile_min_y < box.w) & (tile_max_y > box.y);
-    
-    return x_overlap & y_overlap;
-}
-
 __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     const QuadBox& quad_box,
     const dim3& grid,
@@ -405,11 +387,18 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
             }
         }
     }
-    // 处理left_small_box覆盖的tile (包括 rect_middle_x 不包括 rect_middle_y)
+    // 处理left_small_box覆盖的tile (不包括 rect_middle_x 不包括 rect_middle_y)
     rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.left_small_box.x / BLOCK_X)));
     rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.left_small_box.y / BLOCK_Y)));
     rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.left_small_box.z / BLOCK_X)));
     rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.left_small_box.w / BLOCK_Y)));
+
+    if (rect_min_x == rect_middle_x) {
+        rect_min_x = rect_middle_x + 1; // 不包括 middle_x
+    }
+    if (rect_max_x == rect_middle_x + 1) {
+        rect_max_x = rect_middle_x; // 不包括 middle_x
+    }
 
     if (rect_min_y == rect_middle_y) {
         rect_min_y = rect_middle_y + 1; // 不包括 middle_y
@@ -429,7 +418,7 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
             }
         }
     }
-    // 处理right_box覆盖的tile (不包括 rect_middle_x 包括 rect_middle_y)
+    // 处理right_box覆盖的tile (不包括 rect_middle_x 不包括 rect_middle_y)
     rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.right_box.x / BLOCK_X)));
     rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.right_box.y / BLOCK_Y)));
     rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.right_box.z / BLOCK_X)));
@@ -440,6 +429,12 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     }
     if (rect_max_x == rect_middle_x + 1) {
         rect_max_x = rect_middle_x; // 不包括 middle_x
+    }
+    if (rect_min_y == rect_middle_y) {
+        rect_min_y = rect_middle_y + 1; // 不包括 middle_y
+    }
+    if (rect_max_y == rect_middle_y + 1) {
+        rect_max_y = rect_middle_y; // 不包括 middle_y
     }
     
     for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
@@ -454,24 +449,27 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
             }
         }
     }
-    // 处理right_small_box覆盖的tile (不包括 rect_middle_x 不包括 rect_middle_y)
+    // 处理right_small_box覆盖的tile (包括 rect_middle_x 包括 rect_middle_y ，不包括 (rect_middle_x,rect_middle_y))
     rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.right_small_box.x / BLOCK_X)));
     rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.right_small_box.y / BLOCK_Y)));
     rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.right_small_box.z / BLOCK_X)));
     rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.right_small_box.w / BLOCK_Y)));
 
-    if (rect_min_x == rect_middle_x) {
-        rect_min_x = rect_middle_x + 1; // 不包括 middle_x
+
+    for(int tile_y = rect_min_y + 1; tile_y < rect_max_y; ++tile_y) {
+        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
+            ++tiles_count;
+            // 处理右侧小矩形的tile
+            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
+                gaussian_keys_unsorted[off] = key;
+                gaussian_values_unsorted[off] = idx;
+                off++;
+            }
+        }
     }
-    if (rect_max_x == rect_middle_x + 1) {
-        rect_max_x = rect_middle_x; // 不包括 middle_x
-    }
-    if (rect_min_y == rect_middle_y) {
-        rect_min_y = rect_middle_y + 1; // 不包括 middle_y
-    }
-    if (rect_max_y == rect_middle_y + 1) {
-        rect_max_y = rect_middle_y; // 不包括 middle_y
-    }
+    rect_max_y = min( rect_max_y , rect_min_y + 1);
+
     for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
         for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
             ++tiles_count;
@@ -484,7 +482,6 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
             }
         }
     }
-
 
     return tiles_count;
 }
