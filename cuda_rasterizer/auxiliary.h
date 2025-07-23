@@ -346,6 +346,18 @@ __device__ inline QuadBox constructQuadBoxes(
 // Efficient AABB-tile intersection test - OPTIMIZED
 // Requirements: 1.4, 5.1, 5.2, 5.3, 5.4
 // Requirements: 4.2, 4.3 - minimize branching for better SIMD utilization
+// bitmap 工具函数，放在 generateUniqueTileIntersectionsQuad 前
+__device__ inline bool bitmap_test(uint32_t* bitmap, int idx) {
+    int word = idx / 32;
+    int bit = idx % 32;
+    return (bitmap[word] & (1u << bit)) != 0;
+}
+__device__ inline void bitmap_set(uint32_t* bitmap, int idx) {
+    int word = idx / 32;
+    int bit = idx % 32;
+    bitmap[word] |= (1u << bit);
+}
+
 __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     const QuadBox& quad_box,
     const dim3& grid,
@@ -355,28 +367,13 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     uint64_t* gaussian_keys_unsorted,
     uint32_t* gaussian_values_unsorted
 ) {
-
-    // bitmap: 每个 tile 一个 bit，tile 总数 = grid.x * grid.y
     const int MAX_TILES = 65536; // 可根据实际需求调整
     const int BITMAP_SIZE = (MAX_TILES + 31) / 32;
     uint32_t bitmap[BITMAP_SIZE];
-    // 初始化 bitmap
     #pragma unroll
     for (int i = 0; i < BITMAP_SIZE; ++i) bitmap[i] = 0;
 
-    auto bitmap_test = [](uint32_t* bitmap, int idx) __device__ {
-        int word = idx / 32;
-        int bit = idx % 32;
-        return (bitmap[word] & (1u << bit)) != 0;
-    };
-    auto bitmap_set = [](uint32_t* bitmap, int idx) __device__ {
-        int word = idx / 32;
-        int bit = idx % 32;
-        bitmap[word] |= (1u << bit);
-    };
-
     uint32_t tiles_count = 0;
-    // 处理四个 box 的 tile
     struct Box {
         float4 box;
     } boxes[4] = {
@@ -394,8 +391,8 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
         for (int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
             for (int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
                 int tile_idx = tile_y * grid.x + tile_x;
-                if (tile_idx >= MAX_TILES) continue; // 防止越界
-                if (bitmap_test(bitmap, tile_idx)) continue; // 已访问，跳过
+                if (tile_idx >= MAX_TILES) continue;
+                if (bitmap_test(bitmap, tile_idx)) continue;
                 bitmap_set(bitmap, tile_idx);
                 ++tiles_count;
                 if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
