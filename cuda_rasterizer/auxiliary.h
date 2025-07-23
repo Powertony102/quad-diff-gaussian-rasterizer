@@ -370,191 +370,119 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     uint32_t* gaussian_values_unsorted
 ) {
     uint32_t tiles_count = 0;
-    // Compute union bounding rectangle of all four boxes with validation
     
-    float middle_x = (quad_box.left_box.x + quad_box.right_box.z) * 0.5f;
-    float middle_y = (quad_box.left_box.y + quad_box.right_box.w) * 0.5f;
-
-    // printf("%.7f %.7f\n", middle_x, middle_y);
-    // cout<<"middle_x: " << middle_x << ", middle_y: " << middle_y << endl;
-
-    int rect_middle_x = max(0, min((int)grid.x, (int)floorf(middle_x / BLOCK_X)));
-    int rect_middle_y = max(0, min((int)grid.y, (int)floorf(middle_y / BLOCK_Y)));
+    // 1. 计算SnugBox的边界
+    float snug_min_x = fminf(fminf(quad_box.left_box.x, quad_box.left_small_box.x), 
+                            fminf(quad_box.right_box.x, quad_box.right_small_box.x));
+    float snug_max_x = fmaxf(fmaxf(quad_box.left_box.z, quad_box.left_small_box.z), 
+                            fmaxf(quad_box.right_box.z, quad_box.right_small_box.z));
+    float snug_min_y = fminf(fminf(quad_box.left_box.y, quad_box.left_small_box.y), 
+                            fminf(quad_box.right_box.y, quad_box.right_small_box.y));
+    float snug_max_y = fmaxf(fmaxf(quad_box.left_box.w, quad_box.left_small_box.w), 
+                            fmaxf(quad_box.right_box.w, quad_box.right_small_box.w));
     
-    // cout<<"rect_middle_x: " << rect_middle_x << ", rect_middle_y: " << rect_middle_y << endl;
-
-    int rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.left_box.x / BLOCK_X)));
-    int rect_min_y = max(0, min((int)grid.y, (int)floorf( min(quad_box.left_box.y,quad_box.right_box.y) / BLOCK_Y)));
-    int rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.right_box.z / BLOCK_X)));
-    int rect_max_y = max(0, min((int)grid.y, (int)ceilf( max(quad_box.left_box.w,quad_box.right_box.w) / BLOCK_Y)));
-
-    for(int tile_y = rect_middle_y; tile_y <= rect_middle_y; ++tile_y) {
-        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
-            ++tiles_count;
-            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
-                // cout<<"1: tile_id: " << ((uint64_t)tile_y * grid.x + tile_x)<<" tile_x="<<tile_x<<" tile_y="<<tile_y <<" key: " << key <<endl;
-                gaussian_keys_unsorted[off] = key;
-                gaussian_values_unsorted[off] = idx;
-                off++;
+    // 转换为tile坐标
+    int snug_min_tile_x = max(0, min((int)grid.x, (int)floorf(snug_min_x / BLOCK_X)));
+    int snug_max_tile_x = max(0, min((int)grid.x, (int)ceilf(snug_max_x / BLOCK_X)));
+    int snug_min_tile_y = max(0, min((int)grid.y, (int)floorf(snug_min_y / BLOCK_Y)));
+    int snug_max_tile_y = max(0, min((int)grid.y, (int)ceilf(snug_max_y / BLOCK_Y)));
+    
+    // 2. 确定短边和长边
+    int rect_a = snug_max_tile_x - snug_min_tile_x;  // x方向tile数量
+    int rect_b = snug_max_tile_y - snug_min_tile_y;  // y方向tile数量
+    
+    bool x_is_short = (rect_a <= rect_b);  // x方向是短边
+    
+    // 3. 沿短边遍历
+    if (x_is_short) {
+        // x是短边，外层循环遍历x，内层循环遍历y
+        for (int tile_x = snug_min_tile_x; tile_x < snug_max_tile_x; ++tile_x) {
+            
+            // 3.1 计算当前列(tile_x)上，四个box的y范围并集
+            float tile_x_min = tile_x * BLOCK_X;
+            float tile_x_max = (tile_x + 1) * BLOCK_X;
+            
+            // 找出在当前列上有覆盖的box，并求y范围的并集
+            float col_min_y = 1e9f, col_max_y = -1e9f;
+            bool has_coverage = false;
+            
+            // 检查四个box在当前列是否有覆盖
+            float4 boxes[4] = {quad_box.left_box, quad_box.left_small_box, 
+                              quad_box.right_box, quad_box.right_small_box};
+            
+            for (int b = 0; b < 4; ++b) {
+                // 修复：检查tile区间与box区间是否有交集
+                if (!(tile_x_max <= boxes[b].x || tile_x_min >= boxes[b].z)) {
+                    // 当前box在此列有覆盖
+                    col_min_y = fminf(col_min_y, boxes[b].y);
+                    col_max_y = fmaxf(col_max_y, boxes[b].w);
+                    has_coverage = true;
+                }
+            }
+            
+            if (!has_coverage) continue;  // 当前列没有任何box覆盖，跳过
+            
+            // 3.2 转换为tile坐标
+            int start_tile_y = max(snug_min_tile_y, max(0, min((int)grid.y, (int)floorf(col_min_y / BLOCK_Y))));
+            int end_tile_y = min(snug_max_tile_y, max(0, min((int)grid.y, (int)ceilf(col_max_y / BLOCK_Y))));
+            
+            // 3.3 内层循环遍历y
+            for (int tile_y = start_tile_y; tile_y < end_tile_y; ++tile_y) {
+                ++tiles_count;
+                if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                    uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
+                    gaussian_keys_unsorted[off] = key;
+                    gaussian_values_unsorted[off] = idx;
+                    off++;
+                }
+            }
+        }
+    } else {
+        // y是短边，外层循环遍历y，内层循环遍历x
+        for (int tile_y = snug_min_tile_y; tile_y < snug_max_tile_y; ++tile_y) {
+            
+            // 3.1 计算当前行(tile_y)上，四个box的x范围并集
+            float tile_y_min = tile_y * BLOCK_Y;
+            float tile_y_max = (tile_y + 1) * BLOCK_Y;
+            
+            // 找出在当前行上有覆盖的box，并求x范围的并集
+            float row_min_x = 1e9f, row_max_x = -1e9f;
+            bool has_coverage = false;
+            
+            // 检查四个box在当前行是否有覆盖
+            float4 boxes[4] = {quad_box.left_box, quad_box.left_small_box, 
+                              quad_box.right_box, quad_box.right_small_box};
+            
+            for (int b = 0; b < 4; ++b) {
+                // 修复：检查tile区间与box区间是否有交集
+                if (!(tile_y_max <= boxes[b].y || tile_y_min >= boxes[b].w)) {
+                    // 当前box在此行有覆盖
+                    row_min_x = fminf(row_min_x, boxes[b].x);
+                    row_max_x = fmaxf(row_max_x, boxes[b].z);
+                    has_coverage = true;
+                }
+            }
+            
+            if (!has_coverage) continue;  // 当前行没有任何box覆盖，跳过
+            
+            // 3.2 转换为tile坐标
+            int start_tile_x = max(snug_min_tile_x, max(0, min((int)grid.x, (int)floorf(row_min_x / BLOCK_X))));
+            int end_tile_x = min(snug_max_tile_x, max(0, min((int)grid.x, (int)ceilf(row_max_x / BLOCK_X))));
+            
+            // 3.3 内层循环遍历x
+            for (int tile_x = start_tile_x; tile_x < end_tile_x; ++tile_x) {
+                ++tiles_count;
+                if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                    uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
+                    gaussian_keys_unsorted[off] = key;
+                    gaussian_values_unsorted[off] = idx;
+                    off++;
+                }
             }
         }
     }
-    for(int tile_x = rect_middle_x; tile_x <= rect_middle_x; ++tile_x) {
-        for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
-            if (tile_y == rect_middle_y) {
-                continue; // 跳过中间行
-            }
-            ++tiles_count;
-            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
-                gaussian_keys_unsorted[off] = key;
-                gaussian_values_unsorted[off] = idx;
-                off++;
-            }
-        }
-    }
-
-    // 处理left_box覆盖的tile (包括 rect_middle_x 包括 rect_middle_y)
-    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.left_box.x / BLOCK_X)));
-    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.left_box.y / BLOCK_Y)));
-    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.left_box.z / BLOCK_X)));
-    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.left_box.w / BLOCK_Y)));
-    if (rect_min_x == rect_middle_x) {
-        rect_min_x = rect_middle_x + 1;
-    }
-    if (rect_max_x == rect_middle_x + 1) {
-        rect_max_x = rect_middle_x;
-    }
-
-    if (rect_min_y == rect_middle_y) {
-        rect_min_y = rect_middle_y + 1;
-    }
-    if (rect_max_y == rect_middle_y + 1) {
-        rect_max_y = rect_middle_y;
-    }
-    // cout<<"left_box: ";
-    // cout<<"rect_min_x: " << rect_min_x << ", rect_min_y: " << rect_min_y 
-    //     << ", rect_max_x: " << rect_max_x << ", rect_max_y: " << rect_max_y << endl;
-    for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
-        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
-            ++tiles_count;
-            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
-                gaussian_keys_unsorted[off] = key;
-                gaussian_values_unsorted[off] = idx;
-                off++;
-            }
-        }
-    }
-    // 处理left_small_box覆盖的tile (不包括 rect_middle_x 不包括 rect_middle_y)
-    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.left_small_box.x / BLOCK_X)));
-    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.left_small_box.y / BLOCK_Y)));
-    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.left_small_box.z / BLOCK_X)));
-    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.left_small_box.w / BLOCK_Y)));
-
-    if (rect_min_x == rect_middle_x) {
-        rect_min_x = rect_middle_x + 1;
-    }
-    if (rect_max_x == rect_middle_x + 1) {
-        rect_max_x = rect_middle_x;
-    }
-
-    if (rect_min_y == rect_middle_y) {
-        rect_min_y = rect_middle_y + 1;
-    }
-    if (rect_max_y == rect_middle_y + 1) {
-        rect_max_y = rect_middle_y;
-    }
-    // cout<<"left_small_box: ";
-    // cout<<"rect_min_x: " << rect_min_x << ", rect_min_y: " << rect_min_y 
-    //     << ", rect_max_x: " << rect_max_x << ", rect_max_y: " << rect_max_y << endl;
-
-    for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
-        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
-            ++tiles_count;
-            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
-                gaussian_keys_unsorted[off] = key;
-                gaussian_values_unsorted[off] = idx;
-                off++;
-            }
-        }
-    }  
-    // 处理right_small_box覆盖的tile (不包括 rect_middle_x 不包括 rect_middle_y)
-    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.right_small_box.x / BLOCK_X)));
-    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.right_small_box.y / BLOCK_Y)));
-    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.right_small_box.z / BLOCK_X)));
-    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.right_small_box.w / BLOCK_Y)));
-
-    // cout<<"right_small_box: ";
-    // cout<<"rect_min_x: " << rect_min_x << ", rect_min_y: " << rect_min_y 
-    //     << ", rect_max_x: " << rect_max_x << ", rect_max_y: " << rect_max_y << endl;
-
-    if (rect_min_x == rect_middle_x) {
-        rect_min_x = rect_middle_x + 1;
-    }
-    if (rect_max_x == rect_middle_x + 1) {
-        rect_max_x = rect_middle_x;
-    }
-    if (rect_min_y == rect_middle_y) {
-        rect_min_y = rect_middle_y + 1;
-    }
-    if (rect_max_y == rect_middle_y + 1) {
-        rect_max_y = rect_middle_y;
-    }
-    // cout<<"right_small_box: ";
-    // cout<<"rect_min_x: " << rect_min_x << ", rect_min_y: " << rect_min_y 
-    //     << ", rect_max_x: " << rect_max_x << ", rect_max_y: " << rect_max_y << endl;
-
-    for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
-        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
-            ++tiles_count;
-            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
-                gaussian_keys_unsorted[off] = key;
-                gaussian_values_unsorted[off] = idx;
-                off++;
-            }
-        }
-    }
-    // 处理right_box覆盖的tile(包括 rect_middle_x 包括 rect_middle_y ，不包括 (rect_middle_x,rect_middle_y)) 
-    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.right_box.x / BLOCK_X)));
-    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.right_box.y / BLOCK_Y)));
-    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.right_box.z / BLOCK_X)));
-    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.right_box.w / BLOCK_Y)));
-
-    if (rect_min_x == rect_middle_x) {
-        rect_min_x = rect_middle_x + 1;
-    }
-    if (rect_max_x == rect_middle_x + 1) {
-        rect_max_x = rect_middle_x;
-    }
-
-    if (rect_min_y == rect_middle_y) {
-        rect_min_y = rect_middle_y + 1;
-    }
-    if (rect_max_y == rect_middle_y + 1) {
-        rect_max_y = rect_middle_y;
-    }
-    // cout<<"right_box: ";
-    // cout<<"rect_min_x: " << rect_min_x << ", rect_min_y: " << rect_min_y 
-    //     << ", rect_max_x: " << rect_max_x << ", rect_max_y: " << rect_max_y << endl;
-
-    for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
-        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
-            ++tiles_count;
-            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
-                gaussian_keys_unsorted[off] = key;
-                gaussian_values_unsorted[off] = idx;
-                off++;
-            }
-        }
-    }
-
+    
     return tiles_count;
-
 }
 
 __device__ inline uint32_t duplicateToTilesTouched(
