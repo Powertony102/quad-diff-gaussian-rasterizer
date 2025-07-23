@@ -174,19 +174,13 @@ __forceinline__ __device__ bool in_frustum(int idx,
 	return true;
 }
 
-// Structure to hold dual asymmetric AABBs
-struct DualBox {
-    float4 left_box;   // (min_x, min_y, max_x, max_y)
-    float4 right_box;  // (min_x, min_y, max_x, max_y)
-    bool valid;        // Whether boxes are valid
-};
-
 // Structure to hold quad boxes
 struct QuadBox {
     float4 left_box; 
     float4 left_small_box;  
     float4 right_box;  
     float4 right_small_box;
+    float2 center; // ellipse center
     bool valid;        
 };
 
@@ -257,6 +251,8 @@ __device__ inline QuadBox constructQuadBoxes(
     const float snug_max_x = center.x + x_extent;
     const float snug_min_y = center.y - y_extent;
     const float snug_max_y = center.y + y_extent;
+
+    quad_box.center = center;
 
     // Calculate extension coefficient f(e,theta)
     // f(e,theta) = 1 / sqrt(1 + (e^4 / (4*(1-e^2))) * sin^2(2*theta))
@@ -345,7 +341,7 @@ __device__ inline QuadBox constructQuadBoxes(
     return quad_box;
 }
 
-// ---- Unique Tile Intersection Generation System ---- //
+//--- Unique Tile Intersection Generation System ---- //
 
 // Efficient AABB-tile intersection test - OPTIMIZED
 // Requirements: 1.4, 5.1, 5.2, 5.3, 5.4
@@ -360,129 +356,57 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     uint32_t* gaussian_values_unsorted
 ) {
 
+    // bitmap: 每个 tile 一个 bit，tile 总数 = grid.x * grid.y
+    const int MAX_TILES = 65536; // 可根据实际需求调整
+    const int BITMAP_SIZE = (MAX_TILES + 31) / 32;
+    uint32_t bitmap[BITMAP_SIZE];
+    // 初始化 bitmap
+    #pragma unroll
+    for (int i = 0; i < BITMAP_SIZE; ++i) bitmap[i] = 0;
+
+    auto bitmap_test = [](uint32_t* bitmap, int idx) __device__ {
+        int word = idx / 32;
+        int bit = idx % 32;
+        return (bitmap[word] & (1u << bit)) != 0;
+    };
+    auto bitmap_set = [](uint32_t* bitmap, int idx) __device__ {
+        int word = idx / 32;
+        int bit = idx % 32;
+        bitmap[word] |= (1u << bit);
+    };
+
     uint32_t tiles_count = 0;
-    // Compute union bounding rectangle of all four boxes with validation
-    
-    float middle_x = (quad_box.left_box.x + quad_box.right_box.z) * 0.5f;
-    float middle_y = (quad_box.left_box.y + quad_box.right_box.w) * 0.5f;
-    
-    int rect_middle_x = max(0, min((int)grid.x, (int)floorf(middle_x / BLOCK_X)));
-    int rect_middle_y = max(0, min((int)grid.y, (int)floorf(middle_y / BLOCK_Y)));
-    
-    // 处理left_box覆盖的tile (包括 rect_middle_x 包括 rect_middle_y)
-    int rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.left_box.x / BLOCK_X)));
-    int rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.left_box.y / BLOCK_Y)));
-    int rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.left_box.z / BLOCK_X)));
-    int rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.left_box.w / BLOCK_Y)));
-
-    for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
-        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
-            ++tiles_count;
-            // 处理左侧大矩形的tile
-            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
-                gaussian_keys_unsorted[off] = key;
-                gaussian_values_unsorted[off] = idx;
-                off++;
+    // 处理四个 box 的 tile
+    struct Box {
+        float4 box;
+    } boxes[4] = {
+        {quad_box.left_box},
+        {quad_box.left_small_box},
+        {quad_box.right_small_box},
+        {quad_box.right_box}
+    };
+    for (int b = 0; b < 4; ++b) {
+        float4 box = boxes[b].box;
+        int rect_min_x = max(0, min((int)grid.x, (int)floorf(box.x / BLOCK_X)));
+        int rect_min_y = max(0, min((int)grid.y, (int)floorf(box.y / BLOCK_Y)));
+        int rect_max_x = max(0, min((int)grid.x, (int)ceilf(box.z / BLOCK_X)));
+        int rect_max_y = max(0, min((int)grid.y, (int)ceilf(box.w / BLOCK_Y)));
+        for (int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
+            for (int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
+                int tile_idx = tile_y * grid.x + tile_x;
+                if (tile_idx >= MAX_TILES) continue; // 防止越界
+                if (bitmap_test(bitmap, tile_idx)) continue; // 已访问，跳过
+                bitmap_set(bitmap, tile_idx);
+                ++tiles_count;
+                if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                    uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
+                    gaussian_keys_unsorted[off] = key;
+                    gaussian_values_unsorted[off] = idx;
+                    off++;
+                }
             }
         }
     }
-    // 处理left_small_box覆盖的tile (不包括 rect_middle_x 不包括 rect_middle_y)
-    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.left_small_box.x / BLOCK_X)));
-    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.left_small_box.y / BLOCK_Y)));
-    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.left_small_box.z / BLOCK_X)));
-    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.left_small_box.w / BLOCK_Y)));
-
-    if (rect_min_x == rect_middle_x) {
-        rect_min_x = rect_middle_x + 1; // 不包括 middle_x
-    }
-    if (rect_max_x == rect_middle_x + 1) {
-        rect_max_x = rect_middle_x; // 不包括 middle_x
-    }
-
-    if (rect_min_y == rect_middle_y) {
-        rect_min_y = rect_middle_y + 1; // 不包括 middle_y
-    }
-    if (rect_max_y == rect_middle_y + 1) {
-        rect_max_y = rect_middle_y; // 不包括 middle_y
-    }
-    for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
-        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
-            ++tiles_count;
-            // 处理左侧小矩形的tile
-            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
-                gaussian_keys_unsorted[off] = key;
-                gaussian_values_unsorted[off] = idx;
-                off++;
-            }
-        }
-    }  
-    // 处理right_small_box覆盖的tile (不包括 rect_middle_x 不包括 rect_middle_y)
-    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.right_small_box.x / BLOCK_X)));
-    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.right_small_box.y / BLOCK_Y)));
-    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.right_small_box.z / BLOCK_X)));
-    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.right_small_box.w / BLOCK_Y)));
-
-
-    if (rect_min_x == rect_middle_x) {
-        rect_min_x = rect_middle_x + 1; // 不包括 middle_x
-    }
-    if (rect_max_x == rect_middle_x + 1) {
-        rect_max_x = rect_middle_x; // 不包括 middle_x
-    }
-    if (rect_min_y == rect_middle_y) {
-        rect_min_y = rect_middle_y + 1; // 不包括 middle_y
-    }
-    if (rect_max_y == rect_middle_y + 1) {
-        rect_max_y = rect_middle_y; // 不包括 middle_y
-    }
-    
-    for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
-        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
-            ++tiles_count;
-            // 处理右侧大矩形的tile
-            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
-                gaussian_keys_unsorted[off] = key;
-                gaussian_values_unsorted[off] = idx;
-                off++;
-            }
-        }
-    }
-    // 处理right_box覆盖的tile(包括 rect_middle_x 包括 rect_middle_y ，不包括 (rect_middle_x,rect_middle_y)) 
-    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.right_box.x / BLOCK_X)));
-    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.right_box.y / BLOCK_Y)));
-    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.right_box.z / BLOCK_X)));
-    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.right_box.w / BLOCK_Y)));
-
-    for(int tile_y = rect_min_y + 1; tile_y < rect_max_y; ++tile_y) {
-        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
-            ++tiles_count;
-            // 处理右侧小矩形的tile
-            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
-                gaussian_keys_unsorted[off] = key;
-                gaussian_values_unsorted[off] = idx;
-                off++;
-            }
-        }
-    }
-    rect_max_y = min( rect_max_y , rect_min_y + 1);
-
-    for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
-        for(int tile_x = rect_min_x + 1; tile_x < rect_max_x; ++tile_x) {
-            ++tiles_count;
-            // 处理右侧小矩形的tile
-            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
-                gaussian_keys_unsorted[off] = key;
-                gaussian_values_unsorted[off] = idx;
-                off++;
-            }
-        }
-    }
-
     return tiles_count;
 }
 
@@ -518,7 +442,7 @@ __device__ inline uint32_t duplicateToTilesTouched(
         quad_box, grid, idx, off, depth,
         gaussian_keys_unsorted, gaussian_values_unsorted
     );
-}
+} -
 
 #define CHECK_CUDA(A, debug) \
 A; if(debug) { \
