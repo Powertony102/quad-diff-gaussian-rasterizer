@@ -358,6 +358,8 @@ __device__ inline void bitmap_set(uint32_t* bitmap, int idx) {
     bitmap[word] |= (1u << bit);
 }
 
+
+
 __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     const QuadBox& quad_box,
     const dim3& grid,
@@ -367,44 +369,192 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     uint64_t* gaussian_keys_unsorted,
     uint32_t* gaussian_values_unsorted
 ) {
-    const int MAX_TILES = 65536; // 可根据实际需求调整
-    const int BITMAP_SIZE = (MAX_TILES + 31) / 32;
-    uint32_t bitmap[BITMAP_SIZE];
-    #pragma unroll
-    for (int i = 0; i < BITMAP_SIZE; ++i) bitmap[i] = 0;
-
     uint32_t tiles_count = 0;
-    struct Box {
-        float4 box;
-    } boxes[4] = {
-        {quad_box.left_box},
-        {quad_box.left_small_box},
-        {quad_box.right_small_box},
-        {quad_box.right_box}
-    };
-    for (int b = 0; b < 4; ++b) {
-        float4 box = boxes[b].box;
-        int rect_min_x = max(0, min((int)grid.x, (int)floorf(box.x / BLOCK_X)));
-        int rect_min_y = max(0, min((int)grid.y, (int)floorf(box.y / BLOCK_Y)));
-        int rect_max_x = max(0, min((int)grid.x, (int)ceilf(box.z / BLOCK_X)));
-        int rect_max_y = max(0, min((int)grid.y, (int)ceilf(box.w / BLOCK_Y)));
-        for (int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
-            for (int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
-                int tile_idx = tile_y * grid.x + tile_x;
-                if (tile_idx >= MAX_TILES) continue;
-                if (bitmap_test(bitmap, tile_idx)) continue;
-                bitmap_set(bitmap, tile_idx);
-                ++tiles_count;
-                if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                    uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
-                    gaussian_keys_unsorted[off] = key;
-                    gaussian_values_unsorted[off] = idx;
-                    off++;
-                }
+    // Compute union bounding rectangle of all four boxes with validation
+    
+    float middle_x = (quad_box.left_box.x + quad_box.right_box.z) * 0.5f;
+    float middle_y = (quad_box.left_box.y + quad_box.right_box.w) * 0.5f;
+
+    // printf("%.7f %.7f\n", middle_x, middle_y);
+    // cout<<"middle_x: " << middle_x << ", middle_y: " << middle_y << endl;
+
+    int rect_middle_x = max(0, min((int)grid.x, (int)floorf(middle_x / BLOCK_X)));
+    int rect_middle_y = max(0, min((int)grid.y, (int)floorf(middle_y / BLOCK_Y)));
+    
+    // cout<<"rect_middle_x: " << rect_middle_x << ", rect_middle_y: " << rect_middle_y << endl;
+
+    int rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.left_box.x / BLOCK_X)));
+    int rect_min_y = max(0, min((int)grid.y, (int)floorf( min(quad_box.left_box.y,quad_box.right_box.y) / BLOCK_Y)));
+    int rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.right_box.z / BLOCK_X)));
+    int rect_max_y = max(0, min((int)grid.y, (int)ceilf( max(quad_box.left_box.w,quad_box.right_box.w) / BLOCK_Y)));
+
+    for(int tile_y = rect_middle_y; tile_y <= rect_middle_y; ++tile_y) {
+        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
+            ++tiles_count;
+            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
+                // cout<<"1: tile_id: " << ((uint64_t)tile_y * grid.x + tile_x)<<" tile_x="<<tile_x<<" tile_y="<<tile_y <<" key: " << key <<endl;
+                gaussian_keys_unsorted[off] = key;
+                gaussian_values_unsorted[off] = idx;
+                off++;
             }
         }
     }
+    for(int tile_x = rect_middle_x; tile_x <= rect_middle_x; ++tile_x) {
+        for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
+            if (tile_y == rect_middle_y) {
+                continue; // 跳过中间行
+            }
+            ++tiles_count;
+            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
+                gaussian_keys_unsorted[off] = key;
+                gaussian_values_unsorted[off] = idx;
+                off++;
+            }
+        }
+    }
+
+    // 处理left_box覆盖的tile (包括 rect_middle_x 包括 rect_middle_y)
+    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.left_box.x / BLOCK_X)));
+    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.left_box.y / BLOCK_Y)));
+    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.left_box.z / BLOCK_X)));
+    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.left_box.w / BLOCK_Y)));
+    if (rect_min_x == rect_middle_x) {
+        rect_min_x = rect_middle_x + 1;
+    }
+    if (rect_max_x == rect_middle_x + 1) {
+        rect_max_x = rect_middle_x;
+    }
+
+    if (rect_min_y == rect_middle_y) {
+        rect_min_y = rect_middle_y + 1;
+    }
+    if (rect_max_y == rect_middle_y + 1) {
+        rect_max_y = rect_middle_y;
+    }
+    // cout<<"left_box: ";
+    // cout<<"rect_min_x: " << rect_min_x << ", rect_min_y: " << rect_min_y 
+    //     << ", rect_max_x: " << rect_max_x << ", rect_max_y: " << rect_max_y << endl;
+    for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
+        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
+            ++tiles_count;
+            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
+                gaussian_keys_unsorted[off] = key;
+                gaussian_values_unsorted[off] = idx;
+                off++;
+            }
+        }
+    }
+    // 处理left_small_box覆盖的tile (不包括 rect_middle_x 不包括 rect_middle_y)
+    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.left_small_box.x / BLOCK_X)));
+    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.left_small_box.y / BLOCK_Y)));
+    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.left_small_box.z / BLOCK_X)));
+    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.left_small_box.w / BLOCK_Y)));
+
+    if (rect_min_x == rect_middle_x) {
+        rect_min_x = rect_middle_x + 1;
+    }
+    if (rect_max_x == rect_middle_x + 1) {
+        rect_max_x = rect_middle_x;
+    }
+
+    if (rect_min_y == rect_middle_y) {
+        rect_min_y = rect_middle_y + 1;
+    }
+    if (rect_max_y == rect_middle_y + 1) {
+        rect_max_y = rect_middle_y;
+    }
+    // cout<<"left_small_box: ";
+    // cout<<"rect_min_x: " << rect_min_x << ", rect_min_y: " << rect_min_y 
+    //     << ", rect_max_x: " << rect_max_x << ", rect_max_y: " << rect_max_y << endl;
+
+    for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
+        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
+            ++tiles_count;
+            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
+                gaussian_keys_unsorted[off] = key;
+                gaussian_values_unsorted[off] = idx;
+                off++;
+            }
+        }
+    }  
+    // 处理right_small_box覆盖的tile (不包括 rect_middle_x 不包括 rect_middle_y)
+    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.right_small_box.x / BLOCK_X)));
+    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.right_small_box.y / BLOCK_Y)));
+    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.right_small_box.z / BLOCK_X)));
+    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.right_small_box.w / BLOCK_Y)));
+
+    // cout<<"right_small_box: ";
+    // cout<<"rect_min_x: " << rect_min_x << ", rect_min_y: " << rect_min_y 
+    //     << ", rect_max_x: " << rect_max_x << ", rect_max_y: " << rect_max_y << endl;
+
+    if (rect_min_x == rect_middle_x) {
+        rect_min_x = rect_middle_x + 1;
+    }
+    if (rect_max_x == rect_middle_x + 1) {
+        rect_max_x = rect_middle_x;
+    }
+    if (rect_min_y == rect_middle_y) {
+        rect_min_y = rect_middle_y + 1;
+    }
+    if (rect_max_y == rect_middle_y + 1) {
+        rect_max_y = rect_middle_y;
+    }
+    // cout<<"right_small_box: ";
+    // cout<<"rect_min_x: " << rect_min_x << ", rect_min_y: " << rect_min_y 
+    //     << ", rect_max_x: " << rect_max_x << ", rect_max_y: " << rect_max_y << endl;
+
+    for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
+        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
+            ++tiles_count;
+            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
+                gaussian_keys_unsorted[off] = key;
+                gaussian_values_unsorted[off] = idx;
+                off++;
+            }
+        }
+    }
+    // 处理right_box覆盖的tile(包括 rect_middle_x 包括 rect_middle_y ，不包括 (rect_middle_x,rect_middle_y)) 
+    rect_min_x = max(0, min((int)grid.x, (int)floorf(quad_box.right_box.x / BLOCK_X)));
+    rect_min_y = max(0, min((int)grid.y, (int)floorf(quad_box.right_box.y / BLOCK_Y)));
+    rect_max_x = max(0, min((int)grid.x, (int)ceilf(quad_box.right_box.z / BLOCK_X)));
+    rect_max_y = max(0, min((int)grid.y, (int)ceilf(quad_box.right_box.w / BLOCK_Y)));
+
+    if (rect_min_x == rect_middle_x) {
+        rect_min_x = rect_middle_x + 1;
+    }
+    if (rect_max_x == rect_middle_x + 1) {
+        rect_max_x = rect_middle_x;
+    }
+
+    if (rect_min_y == rect_middle_y) {
+        rect_min_y = rect_middle_y + 1;
+    }
+    if (rect_max_y == rect_middle_y + 1) {
+        rect_max_y = rect_middle_y;
+    }
+    // cout<<"right_box: ";
+    // cout<<"rect_min_x: " << rect_min_x << ", rect_min_y: " << rect_min_y 
+    //     << ", rect_max_x: " << rect_max_x << ", rect_max_y: " << rect_max_y << endl;
+
+    for(int tile_y = rect_min_y; tile_y < rect_max_y; ++tile_y) {
+        for(int tile_x = rect_min_x; tile_x < rect_max_x; ++tile_x) {
+            ++tiles_count;
+            if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
+                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
+                gaussian_keys_unsorted[off] = key;
+                gaussian_values_unsorted[off] = idx;
+                off++;
+            }
+        }
+    }
+
     return tiles_count;
+
 }
 
 __device__ inline uint32_t duplicateToTilesTouched(
