@@ -439,7 +439,7 @@ __device__ inline uint32_t duplicateToTilesTouched(
         quad_box, grid, idx, off, depth,
         gaussian_keys_unsorted, gaussian_values_unsorted
     );
-} -
+}
 
 #define CHECK_CUDA(A, debug) \
 A; if(debug) { \
