@@ -342,24 +342,6 @@ __device__ inline QuadBox constructQuadBoxes(
 }
 
 //--- Unique Tile Intersection Generation System ---- //
-
-// Efficient AABB-tile intersection test - OPTIMIZED
-// Requirements: 1.4, 5.1, 5.2, 5.3, 5.4
-// Requirements: 4.2, 4.3 - minimize branching for better SIMD utilization
-// bitmap 工具函数，放在 generateUniqueTileIntersectionsQuad 前
-__device__ inline bool bitmap_test(uint32_t* bitmap, int idx) {
-    int word = idx / 32;
-    int bit = idx % 32;
-    return (bitmap[word] & (1u << bit)) != 0;
-}
-__device__ inline void bitmap_set(uint32_t* bitmap, int idx) {
-    int word = idx / 32;
-    int bit = idx % 32;
-    bitmap[word] |= (1u << bit);
-}
-
-
-
 __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     const QuadBox& quad_box,
     const dim3& grid,
@@ -392,6 +374,8 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     int rect_b = snug_max_tile_y - snug_min_tile_y;  // y方向tile数量
     
     bool x_is_short = (rect_a <= rect_b);  // x方向是短边
+
+    bool null_array = (gaussian_keys_unsorted == nullptr && gaussian_values_unsorted == nullptr);
     
     // 3. 沿短边遍历
     if (x_is_short) {
@@ -426,15 +410,15 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
             int start_tile_y = max(snug_min_tile_y, max(0, min((int)grid.y, (int)floorf(col_min_y / BLOCK_Y))));
             int end_tile_y = min(snug_max_tile_y, max(0, min((int)grid.y, (int)ceilf(col_max_y / BLOCK_Y))));
             
+            tiles_count += (end_tile_y - start_tile_y);
+            if (null_array) continue;
+
             // 3.3 内层循环遍历y
             for (int tile_y = start_tile_y; tile_y < end_tile_y; ++tile_y) {
-                ++tiles_count;
-                if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                    uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
-                    gaussian_keys_unsorted[off] = key;
-                    gaussian_values_unsorted[off] = idx;
-                    off++;
-                }
+                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
+                gaussian_keys_unsorted[off] = key;
+                gaussian_values_unsorted[off] = idx;
+                off++;
             }
         }
     } else {
@@ -468,16 +452,16 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
             // 3.2 转换为tile坐标
             int start_tile_x = max(snug_min_tile_x, max(0, min((int)grid.x, (int)floorf(row_min_x / BLOCK_X))));
             int end_tile_x = min(snug_max_tile_x, max(0, min((int)grid.x, (int)ceilf(row_max_x / BLOCK_X))));
-            
+
+            tiles_count += (end_tile_x - start_tile_x);
+            if (null_array) continue;
+
             // 3.3 内层循环遍历x
             for (int tile_x = start_tile_x; tile_x < end_tile_x; ++tile_x) {
-                ++tiles_count;
-                if (gaussian_keys_unsorted != nullptr && gaussian_values_unsorted != nullptr) {
-                    uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
-                    gaussian_keys_unsorted[off] = key;
-                    gaussian_values_unsorted[off] = idx;
-                    off++;
-                }
+                uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
+                gaussian_keys_unsorted[off] = key;
+                gaussian_values_unsorted[off] = idx;
+                off++;
             }
         }
     }

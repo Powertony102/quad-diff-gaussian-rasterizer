@@ -299,7 +299,7 @@ int CudaRasterizer::Rasterizer::forward(
 		binningState.point_list_keys_unsorted,
 		binningState.point_list_unsorted,
 		geomState.conic_opacity,
-    geomState.tiles_touched,
+    	geomState.tiles_touched,
 		tile_grid)
 	CHECK_CUDA(, debug)
 
