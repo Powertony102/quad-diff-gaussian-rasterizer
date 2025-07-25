@@ -210,18 +210,18 @@ class GaussianRasterizer(nn.Module):
         
         # Ensure all parameters are proper tensors, not None or boolean values
         if shs is None or not torch.is_tensor(shs):
-            shs = torch.empty(0, device=means3D.device, dtype=means3D.dtype)
+            shs = torch.tensor([], device=means3D.device, dtype=means3D.dtype)
         if colors_precomp is None or not torch.is_tensor(colors_precomp):
-            colors_precomp = torch.empty(0, device=means3D.device, dtype=means3D.dtype)
+            colors_precomp = torch.tensor([], device=means3D.device, dtype=means3D.dtype)
         if opacities is None:
             raise Exception('opacities parameter cannot be None!')
 
         if scales is None or not torch.is_tensor(scales):
-            scales = torch.empty(0, device=means3D.device, dtype=means3D.dtype)
+            scales = torch.tensor([], device=means3D.device, dtype=means3D.dtype)
         if rotations is None or not torch.is_tensor(rotations):
-            rotations = torch.empty(0, device=means3D.device, dtype=means3D.dtype)
+            rotations = torch.tensor([], device=means3D.device, dtype=means3D.dtype)
         if cov3D_precomp is None or not torch.is_tensor(cov3D_precomp):
-            cov3D_precomp = torch.empty(0, device=means3D.device, dtype=means3D.dtype)
+            cov3D_precomp = torch.tensor([], device=means3D.device, dtype=means3D.dtype)
 
         # );
         # Invoke C++/CUDA rasterization routine
