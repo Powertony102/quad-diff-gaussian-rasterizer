@@ -9,9 +9,9 @@
 # For inquiries contact  george.drettakis@inria.fr
 #
 
-from typing import NamedTuple
-import torch.nn as nn
 import torch
+import math
+from torch import nn
 from . import _C
 
 def cpu_deep_copy_tuple(input_tuple):
@@ -27,6 +27,7 @@ def rasterize_gaussians(
     scales,
     rotations,
     cov3Ds_precomp,
+    scores,
     raster_settings,
 ):
     return _RasterizeGaussians.apply(
@@ -38,6 +39,7 @@ def rasterize_gaussians(
         scales,
         rotations,
         cov3Ds_precomp,
+        scores,
         raster_settings,
     )
 
@@ -53,30 +55,31 @@ class _RasterizeGaussians(torch.autograd.Function):
         scales,
         rotations,
         cov3Ds_precomp,
+        scores,
         raster_settings,
     ):
 
         # Restructure arguments the way that the C++ lib expects them
         args = (
-            raster_settings.bg,           # background
-            means3D,                      # means3D
-            colors_precomp,               # colors
-            opacities,                    # opacity
-            scales,                       # scales
-            rotations,                    # rotations
-            raster_settings.scale_modifier, # scale_modifier
-            cov3Ds_precomp,              # cov3D_precomp
-            raster_settings.viewmatrix,   # viewmatrix
-            raster_settings.projmatrix,   # projmatrix
-            raster_settings.tanfovx,      # tan_fovx
-            raster_settings.tanfovy,      # tan_fovy
-            raster_settings.image_height, # image_height
-            raster_settings.image_width,  # image_width
-            sh,                          # sh
-            raster_settings.sh_degree,    # degree
-            raster_settings.campos,       # campos
-            raster_settings.prefiltered,  # prefiltered
-            raster_settings.debug         # debug
+            raster_settings.bg, 
+            means3D,
+            colors_precomp,
+            opacities,
+            scales,
+            rotations,
+            raster_settings.scale_modifier,
+            cov3Ds_precomp,
+            raster_settings.viewmatrix,
+            raster_settings.projmatrix,
+            raster_settings.tanfovx,
+            raster_settings.tanfovy,
+            raster_settings.image_height,
+            raster_settings.image_width,
+            sh,
+            raster_settings.sh_degree,
+            raster_settings.campos,
+            raster_settings.prefiltered,
+            raster_settings.debug
         )
 
         # Invoke C++/CUDA rasterizer
@@ -94,16 +97,16 @@ class _RasterizeGaussians(torch.autograd.Function):
         # Keep relevant tensors for backward
         ctx.raster_settings = raster_settings
         ctx.num_rendered = num_rendered
-        ctx.save_for_backward(colors_precomp, means3D, scales, rotations, cov3Ds_precomp, radii, sh, geomBuffer, binningBuffer, imgBuffer)
+        ctx.save_for_backward(colors_precomp, means3D, scales, rotations, cov3Ds_precomp, radii, sh, geomBuffer, binningBuffer, imgBuffer, scores)
         return color, radii, kernel_times
 
     @staticmethod
-    def backward(ctx, grad_out_color, grad_radii, grad_kernel_times):
+    def backward(ctx, grad_out_color, _0, _1):  # 修改参数数量以匹配forward返回值
 
         # Restore necessary values from context
         num_rendered = ctx.num_rendered
         raster_settings = ctx.raster_settings
-        colors_precomp, means3D, scales, rotations, cov3Ds_precomp, radii, sh, geomBuffer, binningBuffer, imgBuffer = ctx.saved_tensors
+        colors_precomp, means3D, scales, rotations, cov3Ds_precomp, radii, sh, geomBuffer, binningBuffer, imgBuffer, scores = ctx.saved_tensors
 
         # Restructure args as C++ method expects them
         args = (raster_settings.bg,
@@ -132,13 +135,16 @@ class _RasterizeGaussians(torch.autograd.Function):
         if raster_settings.debug:
             cpu_args = cpu_deep_copy_tuple(args) # Copy them before they can be corrupted
             try:
-                grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D, grad_cov3Ds_precomp, grad_sh, grad_scales, grad_rotations = _C.rasterize_gaussians_backward(*args)
+                grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D, grad_cov3Ds_precomp, grad_sh, grad_scales, grad_rotations, grad_scores = _C.rasterize_gaussians_backward(*args)
             except Exception as ex:
                 torch.save(cpu_args, "snapshot_bw.dump")
                 print("\nAn error occured in backward. Writing snapshot_bw.dump for debugging.\n")
                 raise ex
         else:
-             grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D, grad_cov3Ds_precomp, grad_sh, grad_scales, grad_rotations = _C.rasterize_gaussians_backward(*args)
+             grad_means2D, grad_colors_precomp, grad_opacities, grad_means3D, grad_cov3Ds_precomp, grad_sh, grad_scales, grad_rotations, grad_scores = _C.rasterize_gaussians_backward(*args)
+
+        # Conditionally return gradient for scores
+        grad_scores_out = grad_scores if scores.requires_grad else None
 
         grads = (
             grad_means3D,
@@ -149,24 +155,27 @@ class _RasterizeGaussians(torch.autograd.Function):
             grad_scales,
             grad_rotations,
             grad_cov3Ds_precomp,
+            grad_scores_out,
             None,
         )
 
         return grads
 
-class GaussianRasterizationSettings(NamedTuple):
-    image_height: int
-    image_width: int 
-    tanfovx : float
-    tanfovy : float
-    bg : torch.Tensor
-    scale_modifier : float
-    viewmatrix : torch.Tensor
-    projmatrix : torch.Tensor
-    sh_degree : int
-    campos : torch.Tensor
-    prefiltered : bool
-    debug : bool
+class GaussianRasterizationSettings:
+    def __init__(self, image_height, image_width, tanfovx, tanfovy, bg, scale_modifier, viewmatrix, projmatrix, sh_degree, campos, prefiltered, debug, antialiasing=False):
+        self.image_height = image_height
+        self.image_width = image_width
+        self.tanfovx = tanfovx
+        self.tanfovy = tanfovy
+        self.bg = bg
+        self.scale_modifier = scale_modifier
+        self.viewmatrix = viewmatrix
+        self.projmatrix = projmatrix
+        self.sh_degree = sh_degree
+        self.campos = campos
+        self.prefiltered = prefiltered
+        self.debug = debug
+        self.antialiasing = antialiasing
 
 class GaussianRasterizer(nn.Module):
     def __init__(self, raster_settings):
@@ -184,11 +193,11 @@ class GaussianRasterizer(nn.Module):
             
         return visible
 
-    def forward(self, means3D, means2D, shs = None, dc = None, colors_precomp = None, opacities = None, scales = None, rotations = None, cov3D_precomp = None):
+    def forward(self, means3D, means2D, opacities, scores=None, shs = None, dc = None, colors_precomp = None, scales = None, rotations = None, cov3D_precomp = None):
         
         raster_settings = self.raster_settings
 
-        # Handle dc and shs parameters - if both are provided, concatenate them
+        # If shs and dc are provided, concatenate them.
         if shs is not None and dc is not None:
             # Handle shape mismatch for concatenation
             if dc.dim() == 2 and shs.dim() == 4:
@@ -208,22 +217,18 @@ class GaussianRasterizer(nn.Module):
         if ((scales is None or rotations is None) and cov3D_precomp is None) or ((scales is not None or rotations is not None) and cov3D_precomp is not None):
             raise Exception('Please provide exactly one of either scale/rotation pair or precomputed 3D covariance!')
         
-        # Ensure all parameters are proper tensors, not None or boolean values
-        if shs is None or not torch.is_tensor(shs):
-            shs = torch.empty(0, device=means3D.device, dtype=means3D.dtype)
-        if colors_precomp is None or not torch.is_tensor(colors_precomp):
-            colors_precomp = torch.empty(0, device=means3D.device, dtype=means3D.dtype)
-        if opacities is None:
-            raise Exception('opacities parameter cannot be None!')
+        if shs is None:
+            shs = torch.Tensor([])
+        if colors_precomp is None:
+            colors_precomp = torch.Tensor([])
 
-        if scales is None or not torch.is_tensor(scales):
-            scales = torch.empty(0, device=means3D.device, dtype=means3D.dtype)
-        if rotations is None or not torch.is_tensor(rotations):
-            rotations = torch.empty(0, device=means3D.device, dtype=means3D.dtype)
-        if cov3D_precomp is None or not torch.is_tensor(cov3D_precomp):
-            cov3D_precomp = torch.empty(0, device=means3D.device, dtype=means3D.dtype)
+        if scales is None:
+            scales = torch.Tensor([])
+        if rotations is None:
+            rotations = torch.Tensor([])
+        if cov3D_precomp is None:
+            cov3D_precomp = torch.Tensor([])
 
-        # );
         # Invoke C++/CUDA rasterization routine
         return rasterize_gaussians(
             means3D,
@@ -234,6 +239,35 @@ class GaussianRasterizer(nn.Module):
             scales, 
             rotations,
             cov3D_precomp,
+            scores,
             raster_settings, 
         )
+
+class SparseGaussianAdam(torch.optim.Adam):
+    def __init__(self, params, lr, eps):
+        super().__init__(params=params, lr=lr, eps=eps)
+    
+    @torch.no_grad()
+    def step(self, visibility, N):
+        for group in self.param_groups:
+            lr = group["lr"]
+            eps = group["eps"]
+
+            assert len(group["params"]) == 1, "more than one tensor in group"
+            param = group["params"][0]
+            if param.grad is None:
+                continue
+
+            # Lazy state initialization
+            state = self.state[param]
+            if len(state) == 0:
+                state['step'] = torch.tensor(0.0, dtype=torch.float32)
+                state['exp_avg'] = torch.zeros_like(param, memory_format=torch.preserve_format)
+                state['exp_avg_sq'] = torch.zeros_like(param, memory_format=torch.preserve_format)
+
+            stored_state = self.state.get(param, None)
+            exp_avg = stored_state["exp_avg"]
+            exp_avg_sq = stored_state["exp_avg_sq"]
+            M = param.numel() // N
+            _C.adamUpdate(param, param.grad, exp_avg, exp_avg_sq, visibility, lr, 0.9, 0.999, eps, N, M)
 
