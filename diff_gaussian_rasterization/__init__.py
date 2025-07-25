@@ -78,6 +78,61 @@ class _RasterizeGaussians(torch.autograd.Function):
             raster_settings.prefiltered,
             raster_settings.debug
         )
+        
+        # 详细类型检查
+        def check_args_types(args):
+            expected_types = [
+                (torch.Tensor, "arg0: background"),           # 0
+                (torch.Tensor, "arg1: means3D"),              # 1  
+                (torch.Tensor, "arg2: colors_precomp"),       # 2
+                (torch.Tensor, "arg3: opacities"),            # 3
+                (torch.Tensor, "arg4: scales"),               # 4
+                (torch.Tensor, "arg5: rotations"),            # 5
+                (float, "arg6: scale_modifier"),              # 6
+                (torch.Tensor, "arg7: cov3Ds_precomp"),       # 7
+                (torch.Tensor, "arg8: viewmatrix"),           # 8
+                (torch.Tensor, "arg9: projmatrix"),           # 9
+                (float, "arg10: tanfovx"),                    # 10
+                (float, "arg11: tanfovy"),                    # 11
+                (int, "arg12: image_height"),                 # 12
+                (int, "arg13: image_width"),                  # 13
+                (torch.Tensor, "arg14: sh"),                  # 14
+                (int, "arg15: sh_degree"),                    # 15
+                (torch.Tensor, "arg16: campos"),              # 16
+                (bool, "arg17: prefiltered"),                 # 17
+                (bool, "arg18: debug")                        # 18
+            ]
+            
+            print(f"检查参数数量: 期望 {len(expected_types)}, 实际 {len(args)}")
+            assert len(args) == len(expected_types), f"参数数量不匹配: 期望 {len(expected_types)}, 实际 {len(args)}"
+            
+            for i, (arg, (expected_type, name)) in enumerate(zip(args, expected_types)):
+                actual_type = type(arg)
+                print(f"参数 {i}: {name}")
+                print(f"  期望类型: {expected_type}")
+                print(f"  实际类型: {actual_type}")
+                print(f"  实际值: {arg}")
+                
+                if expected_type == torch.Tensor:
+                    assert isinstance(arg, torch.Tensor), f"{name} 应该是 torch.Tensor, 但得到 {actual_type}"
+                    print(f"  张量形状: {arg.shape}")
+                    print(f"  张量设备: {arg.device}")
+                    print(f"  张量数据类型: {arg.dtype}")
+                elif expected_type == float:
+                    assert isinstance(arg, (float, int)), f"{name} 应该是 float, 但得到 {actual_type}"
+                elif expected_type == int:
+                    assert isinstance(arg, int), f"{name} 应该是 int, 但得到 {actual_type}"
+                elif expected_type == bool:
+                    assert isinstance(arg, bool), f"{name} 应该是 bool, 但得到 {actual_type}"
+                
+                print(f"  ✓ 类型检查通过")
+                print()
+            
+            print("所有参数类型检查通过!")
+            return True
+        
+        # 执行类型检查
+        check_args_types(args)
 
         # Invoke C++/CUDA rasterizer
         if raster_settings.debug:
