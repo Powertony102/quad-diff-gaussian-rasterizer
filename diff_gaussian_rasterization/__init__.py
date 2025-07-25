@@ -184,9 +184,23 @@ class GaussianRasterizer(nn.Module):
             
         return visible
 
-    def forward(self, means3D, means2D, opacities, shs = None, colors_precomp = None, scales = None, rotations = None, cov3D_precomp = None):
+    def forward(self, means3D, means2D, shs = None, dc = None, colors_precomp = None, opacities = None, scales = None, rotations = None, cov3D_precomp = None):
         
         raster_settings = self.raster_settings
+
+        # Handle dc and shs parameters - if both are provided, concatenate them
+        if shs is not None and dc is not None:
+            # Handle shape mismatch for concatenation
+            if dc.dim() == 2 and shs.dim() == 4:
+                # Reshape dc from [N, 3] to [N, 1, 1, 3] and expand to match shs dimensions
+                dc = dc.view(dc.shape[0], 1, 1, dc.shape[1]).expand(-1, 1, shs.shape[2], shs.shape[3])
+            shs = torch.cat((dc, shs), dim=1)
+        elif shs is None and dc is not None:
+            # If only dc is provided, it might need to be reshaped as well if it's meant to be the full SH set
+            if dc.dim() == 2:
+                 shs = dc.unsqueeze(1) # Assuming it should be [N, 1, 3]
+            else:
+                 shs = dc
 
         if (shs is None and colors_precomp is None) or (shs is not None and colors_precomp is not None):
             raise Exception('Please provide excatly one of either SHs or precomputed colors!')
@@ -199,6 +213,8 @@ class GaussianRasterizer(nn.Module):
             shs = torch.empty(0, device=means3D.device, dtype=means3D.dtype)
         if colors_precomp is None:
             colors_precomp = torch.empty(0, device=means3D.device, dtype=means3D.dtype)
+        if opacities is None:
+            raise Exception('opacities parameter cannot be None!')
 
         if scales is None:
             scales = torch.empty(0, device=means3D.device, dtype=means3D.dtype)
