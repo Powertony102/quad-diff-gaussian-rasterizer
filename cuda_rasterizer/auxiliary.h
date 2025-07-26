@@ -194,10 +194,10 @@ __device__ inline float computeTiltAngle(const float3& cov2d) {
     register float denominator = cov2d.x - cov2d.z;
     
     // Use fast GPU atan2 function with optimal precision
-    float angle = 0.5f * atan2f(numerator, denominator);
+    float angle = 0.5f * atan2f(numerator, denominator) + M_PI_2;
 
-    if (angle < 0.0f) {
-        angle += M_PI;
+    if (angle > M_PI) {
+        angle -= M_PI;
     }
 
     return angle;
