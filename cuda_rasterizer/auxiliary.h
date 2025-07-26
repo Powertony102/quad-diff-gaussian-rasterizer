@@ -256,11 +256,17 @@ __device__ inline QuadBox constructQuadBoxes(
 
     // Calculate extension coefficient f(e,theta)
     // f(e,theta) = 1 / sqrt(1 + (e^4 / (4*(1-e^2))) * sin^2(2*theta))
-    float e_sq = eccentricity * eccentricity;
-    if (e_sq >= 1.0f) e_sq = 0.999f; // prevent division by zero
-    float sin_2theta = sinf(2.0f * theta);
+    float e2 = fminf(eccentricity * eccentricity, 0.999f);
+    float e4 = e2 * e2;
+
+    float s, c;
+    __sincosf_fast(theta, &s, &c);            // 1×trig_fast
+    float sin_2theta = 2.0f * s * c;
     float sin_2theta_sq = sin_2theta * sin_2theta;
-    float stretch_factor = 1.0f / sqrtf(1.0f + (e_sq * e_sq / (4.0f * (1.0f - e_sq))) * sin_2theta_sq);
+    
+    // float sin_2theta = sinf(2.0f * theta);
+    // float sin_2theta_sq = sin_2theta * sin_2theta;
+    float stretch_factor = 1.0f / sqrtf(1.0f + (e4 / (4.0f * (1.0f - e2))) * sin_2theta_sq);
 
     float left_rect_x, left_rect_y, left_rect_width, left_rect_height;
     float right_rect_x, right_rect_y, right_rect_width, right_rect_height;
