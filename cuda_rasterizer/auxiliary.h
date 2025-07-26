@@ -260,7 +260,7 @@ __device__ inline QuadBox constructQuadBoxes(
     float e4 = e2 * e2;
 
     float s, c;
-    __sincosf_fast(theta, &s, &c);            // 1×trig_fast
+    sincosf(theta, &s, &c); 
     float sin_2theta = 2.0f * s * c;
     float sin_2theta_sq = sin_2theta * sin_2theta;
     
