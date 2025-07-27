@@ -175,15 +175,33 @@ __forceinline__ __device__ bool in_frustum(int idx,
 }
 
 // Structure to hold quad boxes
-struct QuadBox {
+struct  __align__(16) QuadBox {
     float4 left_box; 
     float4 left_small_box;  
     float4 right_box;  
-    float4 right_small_box;
-    float2 center; // ellipse center
-    bool valid;        
+    float4 right_small_box;   
 };
 
+
+__device__ __forceinline__ float atan2f_fast(float y, float x) {​
+    // Eberly-like approximation​
+    const float ONEQTR_PI = 0.7853981633974483f;  // π/4​
+    const float THRQTR_PI = 2.356194490192345f;  // 3π/4​
+​
+    float ay = fabsf(y) + 1e-20f;  // 防 0/0​
+    float r, angle;​
+​
+    if (x >= 0.0f) {​
+        // r = (x - |y|) / (x + |y|)​
+        r = __fdividef(x - ay, x + ay);​
+        angle = ONEQTR_PI - ONEQTR_PI * r;​
+    } else {​
+        // r = (x + |y|) / (|y| - x)​
+        r = __fdividef(x + ay, ay - x);​
+        angle = THRQTR_PI - ONEQTR_PI * r;​
+    }​
+    return (y < 0.0f) ? -angle : angle;​
+}​
 // Compute tilt angle θ using covariance matrix eigenvalue approach - PERFORMANCE OPTIMIZED
 // θ = 0.5 * atan2(2σ_xy, σ_xx - σ_yy)
 // Requirements: 2.1, 4.1, 4.2 - O(1) complexity, efficient GPU trigonometric functions
@@ -194,7 +212,7 @@ __device__ inline float computeTiltAngle(const float3& cov2d) {
     register float denominator = cov2d.x - cov2d.z;
     
     // Use fast GPU atan2 function with optimal precision
-    float angle = 0.5f * atan2f(numerator, denominator) + M_PI_2;
+    float angle = 0.5f * atan2f_fast(numerator, denominator) + M_PI_2;
 
     if (angle > M_PI) {
         angle -= M_PI;
@@ -231,6 +249,32 @@ __device__ inline float computeEccentricity(const float4& con_o) {
 
     return sqrtf(1.0f - ratio);
 }
+__device__ __forceinline__ float compute_strech(float e, float theta) {
+    if (e <= 0.60f) return 1.0f;
+    float s2 = __sinf(2.0f * theta);
+    if (fabsf(s2) < 1e-7f) return 1.0f;
+
+    // t ∈ [0, 1] 对应 e ∈ [0.60, 1.00]
+    float t = 2.5f * (e - 0.60f);
+
+    // 系数：拟合多种 θ 的“中位曲线”
+    const float c0 =  1.00219050f;
+    const float c1 = -0.69803412f;
+    const float c2 =  5.37851516f;
+    const float c3 = -17.42785540f;
+    const float c4 =  23.12712468f;
+    const float c5 = -11.14769269f;
+
+    // Horner 计算（仅 +,-,*）
+    float y = c5;
+    y = fmaf(y, t, c4);
+    y = fmaf(y, t, c3);
+    y = fmaf(y, t, c2);
+    y = fmaf(y, t, c1);
+    y = fmaf(y, t, c0);
+
+    return y;
+}
 
 __device__ inline QuadBox constructQuadBoxes(
     const float4& con_o,
@@ -241,7 +285,6 @@ __device__ inline QuadBox constructQuadBoxes(
     float eccentricity
 ) {
     QuadBox quad_box;
-    quad_box.valid = false;
 
     float x_extent = sqrtf(-t * con_o.z / disc);
     float y_extent = sqrtf(-t * con_o.x / disc);
@@ -342,8 +385,6 @@ __device__ inline QuadBox constructQuadBoxes(
                                           right_small_rect_x + right_small_width,
                                           right_small_rect_y + right_small_height);
     
-    quad_box.valid = true;
-    
     return quad_box;
 }
 
@@ -370,10 +411,10 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
                             fmaxf(quad_box.right_box.w, quad_box.right_small_box.w));
     
     // 转换为tile坐标
-    int snug_min_tile_x = max(0, min((int)grid.x, (int)floorf(snug_min_x / BLOCK_X)));
-    int snug_max_tile_x = max(0, min((int)grid.x, (int)ceilf(snug_max_x / BLOCK_X)));
-    int snug_min_tile_y = max(0, min((int)grid.y, (int)floorf(snug_min_y / BLOCK_Y)));
-    int snug_max_tile_y = max(0, min((int)grid.y, (int)ceilf(snug_max_y / BLOCK_Y)));
+    int snug_min_tile_x = max(0, min((int)grid.x, (int)floorf(snug_min_x * INV_BX)));
+    int snug_max_tile_x = max(0, min((int)grid.x, (int)ceilf(snug_max_x * INV_BX)));
+    int snug_min_tile_y = max(0, min((int)grid.y, (int)floorf(snug_min_y * INV_BY)));
+    int snug_max_tile_y = max(0, min((int)grid.y, (int)ceilf(snug_max_y * INV_BY)));
     
     // 2. 确定短边和长边
     int rect_a = snug_max_tile_x - snug_min_tile_x;  // x方向tile数量
@@ -413,8 +454,8 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
             if (!has_coverage) continue;  // 当前列没有任何box覆盖，跳过
             
             // 3.2 转换为tile坐标
-            int start_tile_y = max(snug_min_tile_y, max(0, min((int)grid.y, (int)floorf(col_min_y / BLOCK_Y))));
-            int end_tile_y = min(snug_max_tile_y, max(0, min((int)grid.y, (int)ceilf(col_max_y / BLOCK_Y))));
+            int start_tile_y = max(snug_min_tile_y, max(0, min((int)grid.y, (int)floorf(col_min_y * INV_BY))));
+            int end_tile_y = min(snug_max_tile_y, max(0, min((int)grid.y, (int)ceilf(col_max_y * INV_BY))));
             
             tiles_count += (end_tile_y - start_tile_y);
             if (null_array) continue;
@@ -456,8 +497,8 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
             if (!has_coverage) continue;  // 当前行没有任何box覆盖，跳过
             
             // 3.2 转换为tile坐标
-            int start_tile_x = max(snug_min_tile_x, max(0, min((int)grid.x, (int)floorf(row_min_x / BLOCK_X))));
-            int end_tile_x = min(snug_max_tile_x, max(0, min((int)grid.x, (int)ceilf(row_max_x / BLOCK_X))));
+            int start_tile_x = max(snug_min_tile_x, max(0, min((int)grid.x, (int)floorf(row_min_x * INV_BX))));
+            int end_tile_x = min(snug_max_tile_x, max(0, min((int)grid.x, (int)ceilf(row_max_x * INV_BX))));
 
             tiles_count += (end_tile_x - start_tile_x);
             if (null_array) continue;

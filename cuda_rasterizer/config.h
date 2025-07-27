@@ -16,4 +16,7 @@
 #define BLOCK_X 16
 #define BLOCK_Y 16
 
+#define INV_BX = 0.0625
+#define INV_BY = 0.0625
+
 #endif
