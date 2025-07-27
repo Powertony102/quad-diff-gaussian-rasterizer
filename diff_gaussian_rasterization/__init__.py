@@ -79,6 +79,7 @@ class _RasterizeGaussians(torch.autograd.Function):
             raster_settings.debug
         )
         
+        """
         # 详细类型检查
         def check_args_types(args):
             expected_types = [
@@ -133,6 +134,7 @@ class _RasterizeGaussians(torch.autograd.Function):
         
         # 执行类型检查
         check_args_types(args)
+        """
 
         # Invoke C++/CUDA rasterizer
         if raster_settings.debug:
