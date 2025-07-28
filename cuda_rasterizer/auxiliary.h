@@ -130,23 +130,6 @@ __forceinline__ __device__ float sigmoid(float x)
 	return 1.0f / (1.0f + expf(-x));
 }
 
-__device__ inline float2 computeEllipseIntersection(
-    const float4 con_o, const float disc, const float t, const float2 p,
-    const bool isY, const float coord)
-{
-    float p_u = isY ? p.y : p.x;
-    float p_v = isY ? p.x : p.y;
-    float coeff = isY ? con_o.x : con_o.z;
-
-    float h = coord - p_u;  // h = y - p.y for y, x - p.x for x
-    float sqrt_term = sqrtf(disc * h * h + t * coeff);
-
-    return {
-      (-con_o.y * h - sqrt_term) / coeff + p_v,
-      (-con_o.y * h + sqrt_term) / coeff + p_v
-    };
-}
-
 __forceinline__ __device__ bool in_frustum(int idx,
 	const float* orig_points,
 	const float* viewmatrix,
@@ -221,171 +204,43 @@ __device__ inline float computeTiltAngle(const float3& cov2d) {
     return angle;
 }
 
-// Compute eccentricity of a 2D Gaussian ellipse
-// The ellipse is defined by Ax² + 2Bxy + Cy² = const
-// Requirements: A, B, C are conic coefficients from con_o
-__device__ inline float computeEccentricity(const float4& con_o) {
-    float A = con_o.x;
-    float B = con_o.y;
-    float C = con_o.z;
+// 基于 2x2 对称矩阵最小特征向量的无三角实现。
+// 输入：cov2d = (a, b, c) 即 Q = [[a, b], [b, c]]
+// 输出：返回 0.0f 表示 Case1 (theta in [0, π/2])；返回 0.75π 表示 Case2 (theta in (π/2, π))
+__device__ inline float computeTiltAngleNoTrig(const float3 cov2d)
+{
+    const float a = cov2d.x;
+    const float b = cov2d.y;
+    const float c = cov2d.z;
 
-    // The matrix M = [[A, B], [B, C]] is related to the inverse of the 2D Gaussian's covariance matrix.
-    // The eccentricity 'e' can be derived from the eigenvalues of M.
-    // e = sqrt(1 - (lambda_min / lambda_max)), where lambda_min and lambda_max
-    // are the smaller and larger eigenvalues of M.
+    // 正定性通常在外层已检查；此处仅按一般对称矩阵处理
+    // 求最小特征值 λ_min = (trace - sqrt((a-c)^2 + 4 b^2)) / 2
+    const float amc   = a - c;
+    const float delta = sqrtf(amc * amc + 4.0f * b * b);
+    const float lam_min = 0.5f * ((a + c) - delta);
 
-    float diff_AC = A - C;
-    // Using fmaf for potentially better performance on some hardware
-    float term_under_sqrt = fmaf(diff_AC, diff_AC, 4.0f * B * B);
-    float term_sqrt = sqrtf(term_under_sqrt);
-    
-    float sum_AC = A + C;
-
-    // Eigenvalues of M
-    float lambda_max = (sum_AC + term_sqrt) / 2.0f;
-    float lambda_min = (sum_AC - term_sqrt) / 2.0f;
-
-    float ratio = lambda_min / lambda_max;
-
-    return sqrtf(1.0f - ratio);
-}
-__device__ __forceinline__ float compute_strech(float e, float theta) {
-    if (e <= 0.60f) return 1.0f;
-    float s2 = __sinf(2.0f * theta);
-    if (fabsf(s2) < 1e-7f) return 1.0f;
-
-    // t ∈ [0, 1] 对应 e ∈ [0.60, 1.00]
-    float t = 2.5f * (e - 0.60f);
-
-    // 系数：拟合多种 θ 的“中位曲线”
-    const float c0 =  1.00219050f;
-    const float c1 = -0.69803412f;
-    const float c2 =  5.37851516f;
-    const float c3 = -17.42785540f;
-    const float c4 =  23.12712468f;
-    const float c5 = -11.14769269f;
-
-    // Horner 计算（仅 +,-,*）
-    float y = c5;
-    y = fmaf(y, t, c4);
-    y = fmaf(y, t, c3);
-    y = fmaf(y, t, c2);
-    y = fmaf(y, t, c1);
-    y = fmaf(y, t, c0);
-
-    return y;
-}
-
-__device__ inline QuadBox constructQuadBoxes(
-    const float4& con_o,
-    const float disc,
-    const float t,
-    const float2& center,
-    float theta, // tilt angle in radians
-    float eccentricity
-) {
-    QuadBox quad_box;
-
-    float x_extent = sqrtf(-t * con_o.z / disc);
-    float y_extent = sqrtf(-t * con_o.x / disc);
-    
-    // 使用精确计算的边界构造 snugbox
-    const float snug_min_x = center.x - x_extent;
-    const float snug_max_x = center.x + x_extent;
-    const float snug_min_y = center.y - y_extent;
-    const float snug_max_y = center.y + y_extent;
-
-    quad_box.center = center;
-
-    // Calculate extension coefficient f(e,theta)
-    // f(e,theta) = 1 / sqrt(1 + (e^4 / (4*(1-e^2))) * sin^2(2*theta))
-    float e2 = fminf(eccentricity * eccentricity, 0.999f);
-    float e4 = e2 * e2;
-
-    float s, c;
-    sincosf(theta, &s, &c); 
-    float sin_2theta = 2.0f * s * c;
-    float sin_2theta_sq = sin_2theta * sin_2theta;
-    
-    // float sin_2theta = sinf(2.0f * theta);
-    // float sin_2theta_sq = sin_2theta * sin_2theta;
-    float stretch_factor = 1.0f / sqrtf(1.0f + (e4 / (4.0f * (1.0f - e2))) * sin_2theta_sq);
-
-    float left_rect_x, left_rect_y, left_rect_width, left_rect_height;
-    float right_rect_x, right_rect_y, right_rect_width, right_rect_height;
-    float left_small_rect_x, left_small_rect_y, left_small_width, left_small_height;
-    float right_small_rect_x, right_small_rect_y, right_small_width, right_small_height;
-
-    if (theta >= 0 && theta <= M_PI_2) // 0° to 90° (0 to π/2)
-    {
-        // 左矩形: 左下点为大矩形左下点，右上点为椭圆中心
-        left_rect_x = snug_min_x;
-        left_rect_y = snug_min_y;
-        left_rect_width = center.x - snug_min_x;
-        left_rect_height = center.y - snug_min_y;
-
-        // 右矩形: 右上点为大矩形右上点，左下点为椭圆中心
-        right_rect_x = center.x;
-        right_rect_y = center.y;
-        right_rect_width = snug_max_x - center.x;
-        right_rect_height = snug_max_y - center.y;
-
-        // 左小矩形: 右下点为椭圆中心
-        left_small_width = left_rect_width * stretch_factor;
-        left_small_height = left_rect_height * stretch_factor;
-        left_small_rect_x = center.x - left_small_width;
-        left_small_rect_y = center.y;
-
-        // 右小矩形: 左上点为椭圆中心
-        right_small_width = left_small_width;  // 与左小矩形相同
-        right_small_height = left_small_height;
-        right_small_rect_x = center.x;
-        right_small_rect_y = center.y - right_small_height;
+    // 计算对应特征向量（避免除零的稳定写法）
+    float vx, vy;
+    if (fabsf(b) > 1e-20f) {
+        // 由 (Q - λI) v = 0 的第一行：(a-λ) vx + b vy = 0
+        // 取 vx = b, vy = (λ - a) 可使该行为 0
+        vx = b;
+        vy = lam_min - a;
+    } else {
+        // b==0 时矩阵已对角化。长轴沿着较小特征值方向：
+        // 若 a < c，λ_min=a，对应 x 轴方向；否则对应 y 轴方向。
+        if (a <= c) { vx = 1.0f; vy = 0.0f; }   // θ = 0
+        else        { vx = 0.0f; vy = 1.0f; }   // θ = π/2
     }
-    else // θ > 90° (θ > π/2)
-    {
-        // 左矩形: 左上点为大矩形左上点，右下点为椭圆中心
-        left_rect_x = snug_min_x;
-        left_rect_y = center.y;
-        left_rect_width = center.x - snug_min_x;
-        left_rect_height = snug_max_y - center.y;
 
-        // 右矩形: 右下点为大矩形右下点，左上点为椭圆中心
-        right_rect_x = center.x;
-        right_rect_y = snug_min_y;
-        right_rect_width = snug_max_x - center.x;
-        right_rect_height = center.y - snug_min_y;
-
-        // 左小矩形和右小矩形
-        left_small_width = left_rect_width * stretch_factor;
-        left_small_height = left_rect_height * stretch_factor;
-        left_small_rect_x = center.x - left_small_width;
-        left_small_rect_y = center.y - left_small_height;
-
-        right_small_width = left_small_width;  // 与左小矩形相同
-        right_small_height = left_small_height;
-        right_small_rect_x = center.x;
-        right_small_rect_y = center.y;
+    // 方向只需区分象限：我们规范化为 vy >= 0（上半平面）
+    if (vy < 0.0f || (vy == 0.0f && vx < 0.0f)) {
+        vx = -vx; vy = -vy;
     }
-    
-    // Store the constructed quad boxes (min_x, min_y, max_x, max_y)
-    quad_box.left_box = make_float4(left_rect_x, left_rect_y, 
-                                   left_rect_x + left_rect_width, 
-                                   left_rect_y + left_rect_height);
-    
-    quad_box.right_box = make_float4(right_rect_x, right_rect_y, 
-                                    right_rect_x + right_rect_width, 
-                                    right_rect_y + right_rect_height);
-    
-    quad_box.left_small_box = make_float4(left_small_rect_x, left_small_rect_y,
-                                         left_small_rect_x + left_small_width,
-                                         left_small_rect_y + left_small_height);
-    
-    quad_box.right_small_box = make_float4(right_small_rect_x, right_small_rect_y,
-                                          right_small_rect_x + right_small_width,
-                                          right_small_rect_y + right_small_height);
-    
-    return quad_box;
+
+    // Case 判定：上半平面内，vx >= 0 -> θ ∈ [0, π/2] (Case1)，否则 (π/2, π) (Case2)
+    const bool case1 = (vx >= 0.0f);  // vy 已确保 >= 0
+    return case1 ? 0.0f : (0.75f * M_PI);  // 返回两个代表角度的常数，匹配后续分支
 }
 
 //--- Unique Tile Intersection Generation System ---- //
@@ -516,6 +371,131 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     return tiles_count;
 }
 
+__device__ inline QuadBox constructQuadBoxes(
+    const float4& con_o,
+    const float disc,
+    const float t,
+    const float2& center
+) {
+    QuadBox quad_box;
+    quad_box.valid = false;
+
+    const float a = con_o.x;
+    const float b = con_o.y;
+    const float c = con_o.z;
+
+    // det = a*c - b*b = -disc  ; 需要正值
+    const float det = fmaf(a, c, -b * b);
+    
+    // 充分性检查：正定 + t>0
+    if (a <= 0.0f || c <= 0.0f || det <= 0.0f || t <= 0.0f) {
+        return quad_box; // invalid
+    }
+
+    // 支持函数极值半径（tight snug box 半径）
+    // x_max = sqrt(t * c / det), y_max = sqrt(t * a / det)
+    const float x_extent = sqrtf(fmaxf(0.0f, t * c / det));
+    const float y_extent = sqrtf(fmaxf(0.0f, t * a / det));
+
+    // 伸缩因子：f = sqrt((ac - b^2) / (ac))
+    float denom_ac = fmaxf(1e-30f, a * c); // 防止除零
+    float raw_f = sqrtf(fmaxf(0.0f, det / denom_ac));
+    // 夹紧到 (0,1]，避免后续极端值放大
+    const float stretch_factor = fminf(fmaxf(raw_f, 1e-6f), 1.0f);
+
+    // 使用精确计算的边界构造 snugbox
+    const float snug_min_x = center.x - x_extent;
+    const float snug_max_x = center.x + x_extent;
+    const float snug_min_y = center.y - y_extent;
+    const float snug_max_y = center.y + y_extent;
+
+    float left_rect_x, left_rect_y, left_rect_width, left_rect_height;
+    float right_rect_x, right_rect_y, right_rect_width, right_rect_height;
+    float left_small_rect_x, left_small_rect_y, left_small_width, left_small_height;
+    float right_small_rect_x, right_small_rect_y, right_small_width, right_small_height;
+
+    bool isQ1Q3 = 1;
+    if (std::abs(b) < 1e-12) {
+        if (a <= c) isQ1Q3 = 1; // 长轴沿 x 轴
+        else if (a > c) isQ1Q3 = 0; // 长轴沿 y 轴
+    }
+    else  isQ1Q3 = (b < 0 ? 1 : 0);
+    
+
+    if ( isQ1Q3 ) // 0° to 90° (0 to π/2)
+    {
+        // 左矩形: 左下点为大矩形左下点，右上点为椭圆中心
+        left_rect_x = snug_min_x;
+        left_rect_y = snug_min_y;
+        left_rect_width = center.x - snug_min_x;
+        left_rect_height = center.y - snug_min_y;
+
+        // 右矩形: 右上点为大矩形右上点，左下点为椭圆中心
+        right_rect_x = center.x;
+        right_rect_y = center.y;
+        right_rect_width = snug_max_x - center.x;
+        right_rect_height = snug_max_y - center.y;
+
+        // 左小矩形: 右下点为椭圆中心
+        left_small_width = left_rect_width * stretch_factor;
+        left_small_height = left_rect_height * stretch_factor;
+        left_small_rect_x = center.x - left_small_width;
+        left_small_rect_y = center.y;
+
+        // 右小矩形: 左上点为椭圆中心
+        right_small_width = left_small_width;  // 与左小矩形相同
+        right_small_height = left_small_height;
+        right_small_rect_x = center.x;
+        right_small_rect_y = center.y - right_small_height;
+    }
+    else // θ > 90° (θ > π/2)
+    {
+        // 左矩形: 左上点为大矩形左上点，右下点为椭圆中心
+        left_rect_x = snug_min_x;
+        left_rect_y = center.y;
+        left_rect_width = center.x - snug_min_x;
+        left_rect_height = snug_max_y - center.y;
+
+        // 右矩形: 右下点为大矩形右下点，左上点为椭圆中心
+        right_rect_x = center.x;
+        right_rect_y = snug_min_y;
+        right_rect_width = snug_max_x - center.x;
+        right_rect_height = center.y - snug_min_y;
+
+        // 左小矩形和右小矩形
+        left_small_width = left_rect_width * stretch_factor;
+        left_small_height = left_rect_height * stretch_factor;
+        left_small_rect_x = center.x - left_small_width;
+        left_small_rect_y = center.y - left_small_height;
+
+        right_small_width = left_small_width;  // 与左小矩形相同
+        right_small_height = left_small_height;
+        right_small_rect_x = center.x;
+        right_small_rect_y = center.y;
+    }
+    
+    // Store the constructed quad boxes (min_x, min_y, max_x, max_y)
+    quad_box.left_box = make_float4(left_rect_x, left_rect_y, 
+                                   left_rect_x + left_rect_width, 
+                                   left_rect_y + left_rect_height);
+    
+    quad_box.right_box = make_float4(right_rect_x, right_rect_y, 
+                                    right_rect_x + right_rect_width, 
+                                    right_rect_y + right_rect_height);
+    
+    quad_box.left_small_box = make_float4(left_small_rect_x, left_small_rect_y,
+                                         left_small_rect_x + left_small_width,
+                                         left_small_rect_y + left_small_height);
+    
+    quad_box.right_small_box = make_float4(right_small_rect_x, right_small_rect_y,
+                                          right_small_rect_x + right_small_width,
+                                          right_small_rect_y + right_small_height);
+    
+    quad_box.valid = true;
+    
+    return quad_box;
+}
+
 __device__ inline uint32_t duplicateToTilesTouched(
     const float2 p, const float4 con_o, const dim3 grid,
     uint32_t idx, uint32_t off, float depth,
@@ -525,24 +505,26 @@ __device__ inline uint32_t duplicateToTilesTouched(
 {
     // 保留：计算 theta 和 eccentricity（用于 quadbox 构造）
     float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
-    float theta = computeTiltAngle(cov2d);
-    float eccentricity = computeEccentricity(con_o);
+    // float theta = computeTiltAngle(cov2d);
+    // float theta = computeTiltAngleNoTrig(cov2d);
+    // float eccentricity = computeEccentricity(con_o);
 
     // 计算判别式和阈值
-    float disc = con_o.y * con_o.y - con_o.x * con_o.z;
-    if (con_o.x <= 0.0f || con_o.z <= 0.0f || disc >= 0.0f) {
+    const float a = con_o.x, b = con_o.y, c = con_o.z;
+    float disc = fmaf(b, b, -a * c);
+    if (a <= 0.0f || c <= 0.0f || disc >= 0.0f) {
         return 0;
     }
 
-    // // 检查 opacity 是否太小，如果 opacity < 1/255，直接跳过
-    // if (con_o.w < 1.0f / 255.0f) {
-    //     return 0;
-    // }
-
+    // 检查 opacity 是否太小，如果 opacity < 1/255，直接跳过
     float t = 2.0f * logf(con_o.w * 255.0f);
+    if (!(t > 0.0f)) {
+        return 0;
+    }
 
     // 保持现有逻辑不变
-    QuadBox quad_box = constructQuadBoxes(con_o, disc, t, p, theta, eccentricity);
+    // QuadBox quad_box = constructQuadBoxes(con_o, disc, t, p, theta, eccentricity);
+    QuadBox quad_box = constructQuadBoxes(con_o, disc, t, p);
 
     return generateUniqueTileIntersectionsQuad(
         quad_box, grid, idx, off, depth,
