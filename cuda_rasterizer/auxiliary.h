@@ -357,13 +357,10 @@ __device__ inline QuadBox constructQuadBoxes(
     const float4& con_o,
     const float disc,
     const float t,
-    const float2& center,
-    float theta // tilt angle in radians
+    const float2& center
 ) {
     QuadBox quad_box;
     quad_box.valid = false;
-
-    quad_box.center = center;
 
     const float a = con_o.x;
     const float b = con_o.y;
@@ -399,7 +396,15 @@ __device__ inline QuadBox constructQuadBoxes(
     float left_small_rect_x, left_small_rect_y, left_small_width, left_small_height;
     float right_small_rect_x, right_small_rect_y, right_small_width, right_small_height;
 
-    if (theta >= 0 && theta <= M_PI_2) // 0° to 90° (0 to π/2)
+    bool isQ1Q3 = 1;
+    if (std::abs(b) < 1e-12) {
+        if (a <= c) isQ1Q3 = 1; // 长轴沿 x 轴
+        else if (a > c) isQ1Q3 = 0; // 长轴沿 y 轴
+    }
+    else  isQ1Q3 = (b < 0 ? 1 : 0);
+    
+
+    if ( isQ1Q3 ) // 0° to 90° (0 to π/2)
     {
         // 左矩形: 左下点为大矩形左下点，右上点为椭圆中心
         left_rect_x = snug_min_x;
@@ -482,7 +487,7 @@ __device__ inline uint32_t duplicateToTilesTouched(
 {
     // 保留：计算 theta 和 eccentricity（用于 quadbox 构造）
     float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
-    float theta = computeTiltAngle(cov2d);
+    // float theta = computeTiltAngle(cov2d);
     // float theta = computeTiltAngleNoTrig(cov2d);
     // float eccentricity = computeEccentricity(con_o);
 
@@ -501,7 +506,7 @@ __device__ inline uint32_t duplicateToTilesTouched(
 
     // 保持现有逻辑不变
     // QuadBox quad_box = constructQuadBoxes(con_o, disc, t, p, theta, eccentricity);
-    QuadBox quad_box = constructQuadBoxes(con_o, disc, t, p, theta);
+    QuadBox quad_box = constructQuadBoxes(con_o, disc, t, p);
 
     return generateUniqueTileIntersectionsQuad(
         quad_box, grid, idx, off, depth,
