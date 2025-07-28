@@ -167,64 +167,6 @@ struct QuadBox {
     bool valid;        
 };
 
-// Compute tilt angle θ using covariance matrix eigenvalue approach - PERFORMANCE OPTIMIZED
-// θ = 0.5 * atan2(2σ_xy, σ_xx - σ_yy)
-// Requirements: 2.1, 4.1, 4.2 - O(1) complexity, efficient GPU trigonometric functions
-__device__ inline float computeTiltAngle(const float3& cov2d) {
-    // Use register variables and fast GPU trigonometric functions for optimal performance
-    // Requirements: 4.2 - use efficient GPU trigonometric functions (atan2f)
-    register float numerator = 2.0f * cov2d.y;
-    register float denominator = cov2d.x - cov2d.z;
-    
-    // Use fast GPU atan2 function with optimal precision
-    float angle = 0.5f * atan2f(numerator, denominator) + M_PI_2;
-
-    if (angle > M_PI) {
-        angle -= M_PI;
-    }
-
-    return angle;
-}
-
-// 基于 2x2 对称矩阵最小特征向量的无三角实现。
-// 输入：cov2d = (a, b, c) 即 Q = [[a, b], [b, c]]
-// 输出：返回 0.0f 表示 Case1 (theta in [0, π/2])；返回 0.75π 表示 Case2 (theta in (π/2, π))
-__device__ inline float computeTiltAngleNoTrig(const float3 cov2d)
-{
-    const float a = cov2d.x;
-    const float b = cov2d.y;
-    const float c = cov2d.z;
-
-    // 正定性通常在外层已检查；此处仅按一般对称矩阵处理
-    // 求最小特征值 λ_min = (trace - sqrt((a-c)^2 + 4 b^2)) / 2
-    const float amc   = a - c;
-    const float delta = sqrtf(amc * amc + 4.0f * b * b);
-    const float lam_min = 0.5f * ((a + c) - delta);
-
-    // 计算对应特征向量（避免除零的稳定写法）
-    float vx, vy;
-    if (fabsf(b) > 1e-20f) {
-        // 由 (Q - λI) v = 0 的第一行：(a-λ) vx + b vy = 0
-        // 取 vx = b, vy = (λ - a) 可使该行为 0
-        vx = b;
-        vy = lam_min - a;
-    } else {
-        // b==0 时矩阵已对角化。长轴沿着较小特征值方向：
-        // 若 a < c，λ_min=a，对应 x 轴方向；否则对应 y 轴方向。
-        if (a <= c) { vx = 1.0f; vy = 0.0f; }   // θ = 0
-        else        { vx = 0.0f; vy = 1.0f; }   // θ = π/2
-    }
-
-    // 方向只需区分象限：我们规范化为 vy >= 0（上半平面）
-    if (vy < 0.0f || (vy == 0.0f && vx < 0.0f)) {
-        vx = -vx; vy = -vy;
-    }
-
-    // Case 判定：上半平面内，vx >= 0 -> θ ∈ [0, π/2] (Case1)，否则 (π/2, π) (Case2)
-    const bool case1 = (vx >= 0.0f);  // vy 已确保 >= 0
-    return case1 ? 0.0f : (0.75f * M_PI);  // 返回两个代表角度的常数，匹配后续分支
-}
-
 //--- Unique Tile Intersection Generation System ---- //
 __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     const QuadBox& quad_box,
@@ -507,6 +449,10 @@ __device__ inline uint32_t duplicateToTilesTouched(
     // 保持现有逻辑不变
     // QuadBox quad_box = constructQuadBoxes(con_o, disc, t, p, theta, eccentricity);
     QuadBox quad_box = constructQuadBoxes(con_o, disc, t, p);
+
+    if (!quad_box.valid) {
+        return 0;
+    }
 
     return generateUniqueTileIntersectionsQuad(
         quad_box, grid, idx, off, depth,
