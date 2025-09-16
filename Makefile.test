@@ -1,0 +1,100 @@
+# Makefile for Dual-SnugBox Tests
+# Requirements: 1.1, 2.1, 2.2, 2.3, 2.4, 5.1, 5.2, 5.3, 5.4
+
+# C++ compiler (using CPU-based tests since CUDA is not available)
+CXX = g++
+
+# Compiler flags
+CXX_FLAGS = -std=c++14 -O2 -Wall -Wextra -I.
+LDFLAGS = -lm
+
+# Test executables
+MATH_TEST = test_dual_snugbox_math
+INTEGRATION_TEST = test_dual_snugbox_integration
+PERFORMANCE_TEST = test_dual_snugbox_performance_benchmark
+
+# Source files
+MATH_TEST_SRC = test_dual_snugbox_math.cpp
+INTEGRATION_TEST_SRC = test_dual_snugbox_integration.cpp
+PERFORMANCE_TEST_SRC = test_dual_snugbox_performance_benchmark.cpp
+
+# Default target
+all: $(MATH_TEST) $(INTEGRATION_TEST) $(PERFORMANCE_TEST)
+
+# Compile the math test executable
+$(MATH_TEST): $(MATH_TEST_SRC)
+	$(CXX) $(CXX_FLAGS) -o $(MATH_TEST) $(MATH_TEST_SRC) $(LDFLAGS)
+
+# Compile the integration test executable
+$(INTEGRATION_TEST): $(INTEGRATION_TEST_SRC)
+	$(CXX) $(CXX_FLAGS) -o $(INTEGRATION_TEST) $(INTEGRATION_TEST_SRC) $(LDFLAGS)
+
+# Compile the performance benchmark executable
+$(PERFORMANCE_TEST): $(PERFORMANCE_TEST_SRC)
+	$(CXX) $(CXX_FLAGS) -o $(PERFORMANCE_TEST) $(PERFORMANCE_TEST_SRC) $(LDFLAGS)
+
+# Run all tests
+test: test-math test-integration test-performance
+
+# Run mathematical function tests
+test-math: $(MATH_TEST)
+	@echo "Running Dual-SnugBox Mathematical Functions Unit Tests..."
+	@echo "======================================================="
+	./$(MATH_TEST)
+
+# Run integration tests
+test-integration: $(INTEGRATION_TEST)
+	@echo "Running Dual-SnugBox Integration Tests..."
+	@echo "========================================"
+	./$(INTEGRATION_TEST)
+
+# Run performance benchmarks
+test-performance: $(PERFORMANCE_TEST)
+	@echo "Running Dual-SnugBox Performance Benchmarks..."
+	@echo "=============================================="
+	./$(PERFORMANCE_TEST)
+
+# Clean up generated files
+clean:
+	rm -f $(MATH_TEST) $(INTEGRATION_TEST) $(PERFORMANCE_TEST) dual_snugbox_benchmark_results.csv
+
+# Run tests with verbose output
+test-verbose: test-math-verbose test-integration-verbose test-performance-verbose
+
+test-math-verbose: $(MATH_TEST)
+	@echo "Running Dual-SnugBox Mathematical Functions Unit Tests (Verbose)..."
+	@echo "=================================================================="
+	./$(MATH_TEST)
+
+test-integration-verbose: $(INTEGRATION_TEST)
+	@echo "Running Dual-SnugBox Integration Tests (Verbose)..."
+	@echo "=================================================="
+	./$(INTEGRATION_TEST)
+
+test-performance-verbose: $(PERFORMANCE_TEST)
+	@echo "Running Dual-SnugBox Performance Benchmarks (Verbose)..."
+	@echo "======================================================="
+	./$(PERFORMANCE_TEST)
+
+# Check compiler installation
+check-compiler:
+	@echo "Checking C++ compiler installation..."
+	@$(CXX) --version || echo "C++ compiler not found"
+
+# Help target
+help:
+	@echo "Available targets:"
+	@echo "  all                  - Build all test executables"
+	@echo "  test                 - Build and run all tests"
+	@echo "  test-math            - Build and run mathematical function tests"
+	@echo "  test-integration     - Build and run integration tests"
+	@echo "  test-performance     - Build and run performance benchmarks"
+	@echo "  test-verbose         - Run all tests with verbose output"
+	@echo "  test-math-verbose    - Run math tests with verbose output"
+	@echo "  test-integration-verbose - Run integration tests with verbose output"
+	@echo "  test-performance-verbose - Run performance benchmarks with verbose output"
+	@echo "  clean                - Remove generated files"
+	@echo "  check-compiler       - Check C++ compiler installation"
+	@echo "  help                 - Show this help message"
+
+.PHONY: all test test-math test-integration test-performance test-verbose test-math-verbose test-integration-verbose test-performance-verbose clean check-compiler help
