@@ -179,7 +179,7 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
 ) {
     uint32_t tiles_count = 0;
     
-    // 1. 计算SnugBox的边界
+    // 1. Compute SnugBox boundaries
     float snug_min_x = fminf(fminf(quad_box.left_box.x, quad_box.left_small_box.x), 
                             fminf(quad_box.right_box.x, quad_box.right_small_box.x));
     float snug_max_x = fmaxf(fmaxf(quad_box.left_box.z, quad_box.left_small_box.z), 
@@ -189,57 +189,57 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
     float snug_max_y = fmaxf(fmaxf(quad_box.left_box.w, quad_box.left_small_box.w), 
                             fmaxf(quad_box.right_box.w, quad_box.right_small_box.w));
     
-    // 转换为tile坐标
+    // Convert to tile coordinates
     int snug_min_tile_x = max(0, min((int)grid.x, (int)floorf(snug_min_x / BLOCK_X)));
     int snug_max_tile_x = max(0, min((int)grid.x, (int)ceilf(snug_max_x / BLOCK_X)));
     int snug_min_tile_y = max(0, min((int)grid.y, (int)floorf(snug_min_y / BLOCK_Y)));
     int snug_max_tile_y = max(0, min((int)grid.y, (int)ceilf(snug_max_y / BLOCK_Y)));
     
-    // 2. 确定短边和长边
-    int rect_a = snug_max_tile_x - snug_min_tile_x;  // x方向tile数量
-    int rect_b = snug_max_tile_y - snug_min_tile_y;  // y方向tile数量
-    
-    bool x_is_short = (rect_a <= rect_b);  // x方向是短边
+    // 2. Determine short and long edges
+    int rect_a = snug_max_tile_x - snug_min_tile_x;  // tile count along x
+    int rect_b = snug_max_tile_y - snug_min_tile_y;  // tile count along y
+
+    bool x_is_short = (rect_a <= rect_b);  // x is the short edge
 
     bool null_array = (gaussian_keys_unsorted == nullptr && gaussian_values_unsorted == nullptr);
     
-    // 3. 沿短边遍历
+    // 3. Traverse along the short edge
     if (x_is_short) {
-        // x是短边，外层循环遍历x，内层循环遍历y
+        // x is the short edge: outer loop over x, inner loop over y
         for (int tile_x = snug_min_tile_x; tile_x < snug_max_tile_x; ++tile_x) {
             
-            // 3.1 计算当前列(tile_x)上，四个box的y范围并集
+            // 3.1 Compute the union of y-ranges of the four boxes on the current column (tile_x)
             float tile_x_min = tile_x * BLOCK_X;
             float tile_x_max = (tile_x + 1) * BLOCK_X;
             
-            // 找出在当前列上有覆盖的box，并求y范围的并集
+            // Find boxes that overlap the current column and compute the union of their y-ranges
             float col_min_y = 1e9f, col_max_y = -1e9f;
             bool has_coverage = false;
             
-            // 检查四个box在当前列是否有覆盖
+            // Check if the four boxes overlap on the current column
             float4 boxes[4] = {quad_box.left_box, quad_box.left_small_box, 
                               quad_box.right_box, quad_box.right_small_box};
             
             for (int b = 0; b < 4; ++b) {
-                // 修复：检查tile区间与box区间是否有交集
+                // Check if tile interval overlaps with box interval
                 if (!(tile_x_max <= boxes[b].x || tile_x_min >= boxes[b].z)) {
-                    // 当前box在此列有覆盖
+                    // Current box overlaps this column
                     col_min_y = fminf(col_min_y, boxes[b].y);
                     col_max_y = fmaxf(col_max_y, boxes[b].w);
                     has_coverage = true;
                 }
             }
             
-            if (!has_coverage) continue;  // 当前列没有任何box覆盖，跳过
-            
-            // 3.2 转换为tile坐标
+            if (!has_coverage) continue;  // No box covers this column, skip
+
+            // 3.2 Convert to tile coordinates
             int start_tile_y = max(snug_min_tile_y, max(0, min((int)grid.y, (int)floorf(col_min_y / BLOCK_Y))));
             int end_tile_y = min(snug_max_tile_y, max(0, min((int)grid.y, (int)ceilf(col_max_y / BLOCK_Y))));
             
             tiles_count += (end_tile_y - start_tile_y);
             if (null_array) continue;
 
-            // 3.3 内层循环遍历y
+            // 3.3 Inner loop over y
             for (int tile_y = start_tile_y; tile_y < end_tile_y; ++tile_y) {
                 uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
                 gaussian_keys_unsorted[off] = key;
@@ -248,41 +248,41 @@ __device__ inline uint32_t generateUniqueTileIntersectionsQuad(
             }
         }
     } else {
-        // y是短边，外层循环遍历y，内层循环遍历x
+        // y is the short edge: outer loop over y, inner loop over x
         for (int tile_y = snug_min_tile_y; tile_y < snug_max_tile_y; ++tile_y) {
             
-            // 3.1 计算当前行(tile_y)上，四个box的x范围并集
+            // 3.1 Compute the union of x-ranges of the four boxes on the current row (tile_y)
             float tile_y_min = tile_y * BLOCK_Y;
             float tile_y_max = (tile_y + 1) * BLOCK_Y;
             
-            // 找出在当前行上有覆盖的box，并求x范围的并集
+            // Find boxes that overlap the current row and compute the union of their x-ranges
             float row_min_x = 1e9f, row_max_x = -1e9f;
             bool has_coverage = false;
             
-            // 检查四个box在当前行是否有覆盖
+            // Check if the four boxes overlap on the current row
             float4 boxes[4] = {quad_box.left_box, quad_box.left_small_box, 
                               quad_box.right_box, quad_box.right_small_box};
             
             for (int b = 0; b < 4; ++b) {
-                // 修复：检查tile区间与box区间是否有交集
+                // Check if tile interval overlaps with box interval
                 if (!(tile_y_max <= boxes[b].y || tile_y_min >= boxes[b].w)) {
-                    // 当前box在此行有覆盖
+                    // Current box overlaps this row
                     row_min_x = fminf(row_min_x, boxes[b].x);
                     row_max_x = fmaxf(row_max_x, boxes[b].z);
                     has_coverage = true;
                 }
             }
             
-            if (!has_coverage) continue;  // 当前行没有任何box覆盖，跳过
-            
-            // 3.2 转换为tile坐标
+            if (!has_coverage) continue;  // No box covers this row, skip
+
+            // 3.2 Convert to tile coordinates
             int start_tile_x = max(snug_min_tile_x, max(0, min((int)grid.x, (int)floorf(row_min_x / BLOCK_X))));
             int end_tile_x = min(snug_max_tile_x, max(0, min((int)grid.x, (int)ceilf(row_max_x / BLOCK_X))));
 
             tiles_count += (end_tile_x - start_tile_x);
             if (null_array) continue;
 
-            // 3.3 内层循环遍历x
+            // 3.3 Inner loop over x
             for (int tile_x = start_tile_x; tile_x < end_tile_x; ++tile_x) {
                 uint64_t key = ((uint64_t)tile_y * grid.x + tile_x) << 32 | *((uint32_t*)&depth);
                 gaussian_keys_unsorted[off] = key;
@@ -308,26 +308,26 @@ __device__ inline QuadBox constructQuadBoxes(
     const float b = con_o.y;
     const float c = con_o.z;
 
-    // det = a*c - b*b = -disc  ; 需要正值
+    // det = a*c - b*b = -disc  ; must be positive
     const float det = fmaf(a, c, -b * b);
     
-    // 充分性检查：正定 + t>0
+    // Sufficient condition check: positive definite + t>0
     if (a <= 0.0f || c <= 0.0f || det <= 0.0f || t <= 0.0f) {
         return quad_box; // invalid
     }
 
-    // 支持函数极值半径（tight snug box 半径）
+    // Support function extremum radius (tight snug box radius)
     // x_max = sqrt(t * c / det), y_max = sqrt(t * a / det)
     const float x_extent = sqrtf(fmaxf(0.0f, t * c / det));
     const float y_extent = sqrtf(fmaxf(0.0f, t * a / det));
 
-    // 伸缩因子：f = sqrt((ac - b^2) / (ac))
-    float denom_ac = fmaxf(1e-30f, a * c); // 防止除零
+    // Stretch factor: f = sqrt((ac - b^2) / (ac))
+    float denom_ac = fmaxf(1e-30f, a * c); // prevent division by zero
     float raw_f = sqrtf(fmaxf(0.0f, det / denom_ac));
-    // 夹紧到 (0,1]，避免后续极端值放大
+    // Clamp to (0,1] to avoid extreme value amplification downstream
     const float stretch_factor = fminf(fmaxf(raw_f, 1e-6f), 1.0f);
 
-    // 使用精确计算的边界构造 snugbox
+    // Construct snugbox using precisely computed bounds
     const float snug_min_x = center.x - x_extent;
     const float snug_max_x = center.x + x_extent;
     const float snug_min_y = center.y - y_extent;
@@ -340,59 +340,59 @@ __device__ inline QuadBox constructQuadBoxes(
 
     bool isQ1Q3 = 1;
     if (std::abs(b) < 1e-12) {
-        if (a <= c) isQ1Q3 = 1; // 长轴沿 x 轴
-        else if (a > c) isQ1Q3 = 0; // 长轴沿 y 轴
+        if (a <= c) isQ1Q3 = 1; // Major axis along x-axis
+        else if (a > c) isQ1Q3 = 0; // Major axis along y-axis
     }
     else  isQ1Q3 = (b < 0 ? 1 : 0);
     
 
     if ( isQ1Q3 ) // 0° to 90° (0 to π/2)
     {
-        // 左矩形: 左下点为大矩形左下点，右上点为椭圆中心
+        // Left rectangle: bottom-left is snug box bottom-left, top-right is ellipse center
         left_rect_x = snug_min_x;
         left_rect_y = snug_min_y;
         left_rect_width = center.x - snug_min_x;
         left_rect_height = center.y - snug_min_y;
 
-        // 右矩形: 右上点为大矩形右上点，左下点为椭圆中心
+        // Right rectangle: top-right is snug box top-right, bottom-left is ellipse center
         right_rect_x = center.x;
         right_rect_y = center.y;
         right_rect_width = snug_max_x - center.x;
         right_rect_height = snug_max_y - center.y;
 
-        // 左小矩形: 右下点为椭圆中心
+        // Left small rectangle: bottom-right at ellipse center
         left_small_width = left_rect_width * stretch_factor;
         left_small_height = left_rect_height * stretch_factor;
         left_small_rect_x = center.x - left_small_width;
         left_small_rect_y = center.y;
 
-        // 右小矩形: 左上点为椭圆中心
-        right_small_width = left_small_width;  // 与左小矩形相同
+        // Right small rectangle: top-left at ellipse center
+        right_small_width = left_small_width;  // Same as left small rectangle
         right_small_height = left_small_height;
         right_small_rect_x = center.x;
         right_small_rect_y = center.y - right_small_height;
     }
     else // θ > 90° (θ > π/2)
     {
-        // 左矩形: 左上点为大矩形左上点，右下点为椭圆中心
+        // Left rectangle: top-left is snug box top-left, bottom-right is ellipse center
         left_rect_x = snug_min_x;
         left_rect_y = center.y;
         left_rect_width = center.x - snug_min_x;
         left_rect_height = snug_max_y - center.y;
 
-        // 右矩形: 右下点为大矩形右下点，左上点为椭圆中心
+        // Right rectangle: bottom-right is snug box bottom-right, top-left is ellipse center
         right_rect_x = center.x;
         right_rect_y = snug_min_y;
         right_rect_width = snug_max_x - center.x;
         right_rect_height = center.y - snug_min_y;
 
-        // 左小矩形和右小矩形
+        // Left small rectangle and right small rectangle
         left_small_width = left_rect_width * stretch_factor;
         left_small_height = left_rect_height * stretch_factor;
         left_small_rect_x = center.x - left_small_width;
         left_small_rect_y = center.y - left_small_height;
 
-        right_small_width = left_small_width;  // 与左小矩形相同
+        right_small_width = left_small_width;  // Same as left small rectangle
         right_small_height = left_small_height;
         right_small_rect_x = center.x;
         right_small_rect_y = center.y;
@@ -427,26 +427,26 @@ __device__ inline uint32_t duplicateToTilesTouched(
     uint32_t* gaussian_values_unsorted
     )
 {
-    // 保留：计算 theta 和 eccentricity（用于 quadbox 构造）
+    // Retained: compute theta and eccentricity (used for quadbox construction)
     float3 cov2d = make_float3(con_o.x, con_o.y, con_o.z);
     // float theta = computeTiltAngle(cov2d);
     // float theta = computeTiltAngleNoTrig(cov2d);
     // float eccentricity = computeEccentricity(con_o);
 
-    // 计算判别式和阈值
+    // Compute discriminant and threshold
     const float a = con_o.x, b = con_o.y, c = con_o.z;
     float disc = fmaf(b, b, -a * c);
     if (a <= 0.0f || c <= 0.0f || disc >= 0.0f) {
         return 0;
     }
 
-    // 检查 opacity 是否太小，如果 opacity < 1/255，直接跳过
+    // Skip if opacity is too small (opacity < 1/255)
     float t = 2.0f * logf(con_o.w * 255.0f);
     if (!(t > 0.0f)) {
         return 0;
     }
 
-    // 保持现有逻辑不变
+    // Keep existing logic unchanged
     // QuadBox quad_box = constructQuadBoxes(con_o, disc, t, p, theta, eccentricity);
     QuadBox quad_box = constructQuadBoxes(con_o, disc, t, p);
 
